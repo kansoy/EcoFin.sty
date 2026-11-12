@@ -1,0 +1,92 @@
+\documentclass[letterpaper,11pt]{article}
+% One file gives the working paper, the anonymous copy, the title page and the
+% online appendix: change `mode` below, or pass --mode to build.py.
+% Defaults: Geist Serif title and headings, Source Serif Pro text and tables,
+% Latin Modern maths, equation numbers on the right, sections numbered 1. / 1.1,
+% and a separate reference list for the online appendix.
+% Other maths fonts:        \usepackage[math=stix]{ecofin} or [math=libertinus]
+% Equation numbers on left: \usepackage[eqnum=left]{ecofin}
+\usepackage{ecofin}
+\bibliographystyle{bibliography}
+
+% ---------------------------------------------------------------------------
+% 1. Settings
+% ---------------------------------------------------------------------------
+\ecofinsetup{
+  mode           = wp,      % wp | blind | article | blindarticle | titlepage | oa | blindoa
+  sections       = arabic,  % arabic (1./1.1) | roman (I./I.A) | unnumbered
+  notes          = hide,    % show | hide: co-author notes (\mnote, \discuss, \replace)
+  dualbib        = true,    % separate reference list for the online appendix
+  showoa         = true,    % show or hide the online appendix
+  showreaderqa   = true,    % show or hide "Questions a Reader May Ask"
+  showtoc        = false,   % table of contents for the paper
+  showoatoc      = false,   % table of contents for the online appendix
+  draft          = false    % draft banner and \ecofinnote[...]{...} callouts
+}
+
+% Named switches for sections and blocks (true shows, false hides)
+\ecofintoggle{data_section}{true}
+\ecofintoggle{extra_notes}{false}
+
+% ---------------------------------------------------------------------------
+% 2. Title, authors and first-page details (left out of every anonymous copy)
+% ---------------------------------------------------------------------------
+\title[Administrative Screening and Progression]{Administrative Screening and Career Progression}
+\subtitle{A Sample Paper with Invented Data, 1990--2020}
+\date{November 2026}
+
+% One \author line for each author; the title block arranges one to six by itself.
+% \email and \orcid after an \author line go into that author's footnote.
+% The number in brackets points to an \affil line; * marks the corresponding author.
+\author[1,*]{Jane Doe}
+\email{jane.doe@example.edu}
+\orcid{0000-0002-1825-0097}   % ORCID's own example identifier
+\author[2]{John Roe}
+\email{john.roe@partner.edu}
+% \author[3]{Third Author}
+% \email{third.author@example.org}
+% \author[4]{Fourth Author}
+% \email{fourth.author@example.org}
+
+% \affil[number]{name under the author}[fuller address for the footnote]
+\affil[1]{Example University}[Department of Economics, Example University]
+\affil[2]{Partner University}[School of Management, Partner University]
+% \affil[3]{Example Institute}
+% \affil[4]{Example College}
+
+\thanks{We thank seminar participants for helpful comments.}
+\disclosure{\textit{Competing interests:} The authors declare none. \textit{Data and code availability:} All data in this sample paper are invented.}
+\available{https://example.org/working-papers/demo}
+
+\keywords{Organizational governance; Personnel panels; Sample paper}
+\jel{C88, D23, J45, M51}
+
+% ---------------------------------------------------------------------------
+% 3. The paper
+% ---------------------------------------------------------------------------
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This sample paper shows what a paper written with EcoFin.sty looks like. Its data are invented. A panel of 12,000 personnel records and 144,000 person-years is used to estimate how senior appointments change in treated divisions after a policy break. The estimate is a decline of 18.4 per cent. The paper has a table, a figure, two equations and an online appendix with its own reference list, so that each part of the style can be seen once.
+\end{abstract}
+
+\begin{ecofinmain}
+\input{sections/01_introduction}
+\ecofininput[if=data_section]{sections/02_data_and_strategy}
+
+\begin{ecofinblock}[if=extra_notes]
+\subsection{Optional Sensitivity Notes}
+This optional block appears only when \texttt{\textbackslash ecofintoggle\{extra\_notes\}\{true\}} is enabled in the preamble.
+\end{ecofinblock}
+
+\clearpage
+\bibliography{references}
+\end{ecofinmain}
+
+\begin{ecofinonlineappendix}
+\input{sections/10_online_appendix}
+\end{ecofinonlineappendix}
+
+\end{document}

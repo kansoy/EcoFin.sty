@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+title: "EcoFin.sty: a LaTeX style for working papers"
+message: "If you use this style, you can cite it as below."
+type: software
+authors:
+  - family-names: Kansoy
+    given-names: Fatih
+version: "1.0.0"
+date-released: "2026-11-12"
+url: "https://fatih.ai/latex/"
+repository-code: "https://github.com/kansoy/EcoFin.sty"
+license:
+  - LPPL-1.3c
+  - MIT
+keywords:
+  - latex
+  - working-paper
+  - economics
+  - finance
+  - economic-history

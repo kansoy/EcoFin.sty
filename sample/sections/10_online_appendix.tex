@@ -1,0 +1,19 @@
+This appendix follows the order of the paper. Online Appendix~1 describes the invented data, the sample and the sensitivity checks behind Section~\ref{sec:data} and equation~\eqref{eq:baseline}. Tables and figures are numbered A1, A2 and so on. Equations continue the numbering of the paper. The appendix opens with a guide that answers the questions a reader is likely to ask first, each with what we did, what we found and where the evidence is.
+
+\begin{ecofinreaderqa}
+\textit{Does attrition across secondary regional rosters drive the post-break gap?} Within complete core rosters alone, the estimated post-break decline is \(-17.8\) per cent (s.e.\ \(3.1\)), compared with \(-18.4\) per cent (s.e.\ \(2.9\)) in the full panel (Table~\ref{tab:oa_checks}, row 2). The two estimates are not statistically different (\(p = 0.78\)).
+
+\textit{Could time-varying returns to tenure explain the divergence?} When tenure profiles may vary freely across periods, as in equation~\eqref{eq:oa_decomp}, the estimate keeps \(89\) per cent of its baseline size (\(p < 0.001\); Table~\ref{tab:oa_checks}, row 3). Standard errors are clustered as in \citet{bertrand2004} and \citet{abadie2023}.
+\end{ecofinreaderqa}
+
+\ecofinappsubsection{Online Appendix 1: Sources and Specification Checks}
+
+\paragraph{Augmented tenure specification}
+To separate governance screening from time-varying tenure premia, we estimate
+\begin{equation}
+  y_{it} = \beta \, \mathit{Treated}_{i} \times \mathit{Post}_{t} + \theta_{t} \, \mathit{Tenure}_{it} + \alpha_{i} + \gamma_{t} + u_{it},
+  \label{eq:oa_decomp}
+\end{equation}
+where \(\theta_{t}\) allows the slope on tenure to shift in every year. Table~\ref{tab:oa_checks} compares baseline and saturated specifications relative to Table~\ref{tab:summary}.
+
+\input{tables/tableA1_checks}

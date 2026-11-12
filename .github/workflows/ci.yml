@@ -1,0 +1,45 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  latex-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install TeX Live & Poppler utilities
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            texlive-latex-base \
+            texlive-latex-recommended \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            texlive-fonts-extra \
+            texlive-science \
+            texlive-luatex \
+            texlive-xetex \
+            texlive-bibtex-extra \
+            latexmk \
+            poppler-utils
+          python3 -m pip install --upgrade pip numpy matplotlib
+
+      - name: Run every test
+        run: |
+          python3 build.py doctor
+          python3 build.py test-all
+          python3 figstyle_ecofin.py --demo dist/figures

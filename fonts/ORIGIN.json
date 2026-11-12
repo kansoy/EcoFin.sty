@@ -1,0 +1,19 @@
+{
+  "family": "Geist Serif",
+  "upstream_repository": "https://github.com/vercel/geist-font",
+  "version": "1.002",
+  "copyright": "Copyright 2026 The Geist Project Authors (https://github.com/vercel/geist-font)",
+  "license": "OFL-1.1",
+  "files": {
+    "GeistSerif-Variable.ttf": {
+      "sha256": "ceb439c71327f4a651225d384a71109871d5caafb924221dfe5165c52d7dfdbc",
+      "bytes": 166920,
+      "role": "Upstream OpenType variable font (ELSH axis)"
+    },
+    "GeistSerif-Regular.ttf": {
+      "sha256": "1a6ceb5ce5eef4d9f24b17ee0668ae75de5f92147d22e1c7395142e4168ac51e",
+      "bytes": 166272,
+      "role": "Pinned static Regular instance (ELSH=0.0) for portable XeLaTeX/LuaLaTeX/Overleaf builds"
+    }
+  }
+}

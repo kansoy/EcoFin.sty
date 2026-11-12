@@ -1,0 +1,57 @@
+\section{Introduction}\label{sec:intro}
+
+Empirical studies of organisations open with the economic question and the institutional setting \citep{becker1957, alchian1972}. For each individual \(i\) observed in period \(t\), we estimate
+\begin{equation}
+  y_{it} = \beta \, \mathit{Treated}_{i} \times \mathit{Post}_{t} + \alpha_{i} + \gamma_{t} + \varepsilon_{it},
+  \label{eq:baseline}
+\end{equation}
+where \(\alpha_{i}\) and \(\gamma_{t}\) denote unit and period fixed effects and standard errors are clustered at the division level \citep{bertrand2004}.
+
+Table~\ref{tab:summary} summarises the panel. Figure~\ref{fig:eventstudy} plots the yearly estimates of \(\beta_{k}\) in
+\begin{equation}
+  y_{it} = \sum_{k \neq -1} \beta_{k} \, \mathit{Treated}_{i} \times \mathbf{1}[t - t^{*} = k] + \alpha_{i} + \gamma_{t} + \varepsilon_{it},
+  \label{eq:eventstudy}
+\end{equation}
+where \(t^{*}\) is the year of the benchmark break and event time \(k\) runs from \(-5\) to \(8\), with the year before the break as the reference. The estimates before the break are close to zero. After the break, the decline builds over the first four years. Online Appendix Table~\ref{tab:oa_checks} shows that the illustrative baseline estimate of \(-18.4\) per cent (s.e.\ \(2.9\)) stays between \(-19.1\) and \(-16.3\) per cent under alternative samples and specifications, including equation~\eqref{eq:oa_decomp} (see Online Appendix~1).
+
+\input{tables/table1_summary}
+
+\begin{figure}[!htbp]
+\centering
+\caption{Senior Appointments Before and After the Benchmark Break}\label{fig:eventstudy}
+\begin{tikzpicture}
+  \begin{axis}[
+    width=0.94\textwidth,
+    height=5.6cm,
+    axis x line*=bottom,
+    axis y line*=left,
+    xmin=-5.6, xmax=8.6,
+    ymin=-32, ymax=8,
+    xtick={-5,...,8},
+    ytick={-30,-20,-10,0},
+    xlabel={Years relative to the break},
+    ylabel={Per cent, relative to year \(-1\)},
+    tick align=outside,
+    tick style={black, thin},
+    label style={font=\footnotesize},
+    tick label style={font=\scriptsize}
+  ]
+    \fill[ecofinshade, fill opacity=0.6] (axis cs:-0.5,-32) rectangle (axis cs:8.6,8);
+    \draw[black, line width=0.6pt] (axis cs:-5.6,0) -- (axis cs:8.6,0);
+    \draw[black, dashed, line width=0.6pt] (axis cs:-0.5,-32) -- (axis cs:-0.5,8);
+    \addplot[ecofinblue, line width=1.1pt, mark=*, mark size=1.9pt,
+      error bars/.cd, y dir=both, y explicit, error bar style={line width=0.8pt}, error mark options={rotate=90, mark size=2.2pt, ecofinblue, line width=0.8pt}]
+      coordinates {
+      (-5, 1.1) +- (0, 4.5) (-4, -0.7) +- (0, 4.1) (-3, 0.4) +- (0, 3.7) (-2, -0.8) +- (0, 3.1)
+      (-1, 0) +- (0, 0)
+      (0, -9.8) +- (0, 3.9) (1, -14.6) +- (0, 4.5) (2, -17.3) +- (0, 4.9) (3, -19.0) +- (0, 5.3)
+      (4, -20.1) +- (0, 5.7) (5, -20.8) +- (0, 6.1) (6, -21.2) +- (0, 6.5) (7, -21.3) +- (0, 7.1) (8, -21.5) +- (0, 7.6)
+    };
+    \addplot[ecofinblue, only marks, mark=*, mark size=1.9pt, mark options={fill=white, line width=0.9pt}] coordinates {(-1, 0)};
+  \end{axis}
+\end{tikzpicture}
+\begin{figurenotes}
+\textit{Sources:} Invented data, made for this sample paper.\\
+\textit{Notes:} Points are the estimates of \(\beta_{k}\) from equation~\eqref{eq:eventstudy}, in per cent, with 95 per cent confidence intervals (standard errors clustered by division). Year \(-1\) is the reference and is set to zero (hollow marker). The dashed line marks the break. The shaded area covers the years after it. The post-break estimates average \(-18.4\) per cent, the estimate from equation~\eqref{eq:baseline}.
+\end{figurenotes}
+\end{figure}

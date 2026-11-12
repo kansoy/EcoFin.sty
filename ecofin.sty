@@ -1,0 +1,2158 @@
+%% ecofin.sty: a LaTeX style for working papers (version 1.0.0)
+%% Copyright (c) 2026 Fatih Kansoy
+%% License: Released under the LaTeX Project Public License v1.3c or later
+%%   (https://www.latex-project.org/lppl.txt) and the MIT License.
+%%
+\NeedsTeXFormat{LaTeX2e}[2022-11-01]
+\ProvidesPackage{ecofin}[2026/11/12 v1.0.0 Working paper style]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 0. Options (package options and \ecofinsetup)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newif\ifK@anonymous
+\newif\ifK@roman
+\newif\ifK@unnumbered
+\newif\ifK@appeqreset
+\newif\ifK@bibunits
+\newif\ifK@dualbib
+\newif\ifK@tightparskip
+\newif\ifK@hugetitle
+\newif\ifK@tikz
+\newif\ifK@geistserif
+\newif\ifK@geisttitle
+\newif\ifK@linenumbers
+\newif\ifK@draft
+\newif\ifK@notes
+\newif\ifK@cleveref
+\newif\ifK@endfloat
+
+% Effective document-mode flags resolved at \begin{document}
+\newif\ifK@main
+\newif\ifK@oa
+\newif\ifK@titleonly
+\newif\ifK@standaloneoa
+\newif\ifecofinoa        \ecofinoatrue
+\newif\ifecofindualbib   \ecofindualbibtrue
+
+% Defaults: Geist Serif headings, Source Serif Pro text, Latin Modern maths, working
+% paper mode, sections numbered 1. / 1.1, equation numbers on the right, a separate
+% reference list for the online appendix, US Letter paper.
+\K@tikztrue
+\K@geisttitletrue
+\K@bibunitstrue
+\K@dualbibtrue
+\K@maintrue
+\K@oatrue
+\def\K@paper{letterpaper}
+\def\K@mathfont{cm}
+
+\ExplSyntaxOn
+\tl_new:N   \g_ecofin_mode_tl
+\tl_new:N   \g_ecofin_sections_tl
+\tl_new:N   \g_ecofin_authorcols_tl
+\tl_new:N   \g_ecofin_abstractstyle_tl
+\tl_new:N   \g_ecofin_runninghead_tl
+\tl_new:N   \g_ecofin_dateprefix_tl
+\tl_new:N   \g_ecofin_oarefheader_tl
+
+\bool_new:N \g_ecofin_anon_override_bool
+\bool_new:N \g_ecofin_anon_override_set_bool
+\bool_new:N \g_ecofin_requestoa_bool
+\bool_new:N \g_ecofin_showabstract_bool
+\bool_new:N \g_ecofin_showkeywords_bool
+\bool_new:N \g_ecofin_showjel_bool
+\bool_new:N \g_ecofin_showthanks_bool
+\bool_new:N \g_ecofin_showdisclosure_bool
+\bool_new:N \g_ecofin_showdeclarations_bool
+\bool_new:N \g_ecofin_showtoc_bool
+\bool_new:N \g_ecofin_showoatoc_bool
+\bool_new:N \g_ecofin_showappendix_bool
+\bool_new:N \g_ecofin_showreaderqa_bool
+
+\prop_new:N \g_ecofin_toggles_prop
+\prop_new:N \g_ecofin_scalars_prop
+\bool_new:N \l_ecofin_cond_bool
+\tl_new:N   \l_ecofin_toggle_val_tl
+
+\tl_gset:Nn \g_ecofin_mode_tl          { wp }
+\tl_gset:Nn \g_ecofin_sections_tl      { arabic }
+\tl_gset:Nn \g_ecofin_authorcols_tl    { auto }
+\tl_gset:Nn \g_ecofin_abstractstyle_tl { inset }
+\tl_gset:Nn \g_ecofin_runninghead_tl   { none }
+\tl_gset:Nn \g_ecofin_dateprefix_tl    { This~version: }
+\tl_gset:Nn \g_ecofin_oarefheader_tl   { References~for~the~Online~Appendix }
+
+\bool_gset_true:N  \g_ecofin_requestoa_bool
+\bool_gset_true:N  \g_ecofin_showabstract_bool
+\bool_gset_true:N  \g_ecofin_showkeywords_bool
+\bool_gset_true:N  \g_ecofin_showjel_bool
+\bool_gset_true:N  \g_ecofin_showthanks_bool
+\bool_gset_true:N  \g_ecofin_showdisclosure_bool
+\bool_gset_false:N \g_ecofin_showdeclarations_bool
+\bool_gset_false:N \g_ecofin_showtoc_bool
+\bool_gset_false:N \g_ecofin_showoatoc_bool
+\bool_gset_true:N  \g_ecofin_showappendix_bool
+\bool_gset_true:N  \g_ecofin_showreaderqa_bool
+
+\keys_define:nn { ecofin }
+  {
+    % --- options that must be given when the package is loaded ---
+    typography .choices:nn =
+      { hybrid, geist, sourceserif }
+      {
+        \str_case:Vn \l_keys_choice_tl
+          {
+            {hybrid}      { \legacy_if_gset_true:n { K@geisttitle } \legacy_if_gset_false:n { K@geistserif } }
+            {geist}       { \legacy_if_gset_true:n { K@geistserif } \legacy_if_gset_false:n { K@geisttitle } }
+            {sourceserif} { \legacy_if_gset_false:n { K@geisttitle } \legacy_if_gset_false:n { K@geistserif } }
+          }
+      },
+    typography .usage:n = load,
+
+    geisttitle  .meta:n  = { typography = hybrid },
+    geisttitle  .usage:n = load,
+    geistserif  .meta:n  = { typography = geist },
+    geistserif  .usage:n = load,
+    sourceserif .meta:n  = { typography = sourceserif },
+    sourceserif .usage:n = load,
+
+    math .choices:nn =
+      { cm, latinmodern, stix, libertinus }
+      {
+        \str_case:Vn \l_keys_choice_tl
+          {
+            {cm}          { \gdef\K@mathfont{cm} }
+            {latinmodern} { \gdef\K@mathfont{cm} }
+            {stix}        { \gdef\K@mathfont{stix} }
+            {libertinus}  { \gdef\K@mathfont{libertinus} }
+          }
+      },
+    math .usage:n = load,
+
+    eqnum .choices:nn =
+      { right, left }
+      {
+        \str_if_eq:VnTF \l_keys_choice_tl { left }
+          { \PassOptionsToPackage{leqno}{amsmath} }
+          { \PassOptionsToPackage{reqno}{amsmath} }
+      },
+    % Load-time only: amsmath fixes the tag side while it loads, so the side must be
+    % chosen in \usepackage[eqnum=left]{ecofin} (or \documentclass[leqno]{article}),
+    % never later in \ecofinsetup.
+    eqnum .usage:n = load,
+    reqno .meta:n  = { eqnum = right },
+    reqno .usage:n = load,
+    leqno .meta:n  = { eqnum = left },
+    leqno .usage:n = load,
+
+    notes .choices:nn =
+      { show, hide }
+      {
+        \str_if_eq:VnTF \l_keys_choice_tl { show }
+          { \legacy_if_gset_true:n  { K@notes } }
+          { \legacy_if_gset_false:n { K@notes } }
+      },
+    notes   .default:n = show,
+    notes   .usage:n   = general,
+    nonotes .meta:n    = { notes = hide },
+    nonotes .usage:n   = general,
+
+    cleveref .code:n =
+      {
+        \str_case:nnF {#1}
+          {
+            {true}  { \legacy_if_gset_true:n  { K@cleveref } }
+            {false} { \legacy_if_gset_false:n { K@cleveref } }
+          }
+          { \PackageError{ecofin}{Invalid~cleveref~value~`#1'}{Use~true~or~false.} }
+      },
+    cleveref   .default:n = true,
+    cleveref   .usage:n   = load,
+    nocleveref .meta:n    = { cleveref = false },
+    nocleveref .usage:n   = load,
+
+    endfloat .code:n =
+      {
+        \str_case:nnF {#1}
+          {
+            {true}  { \legacy_if_gset_true:n  { K@endfloat } }
+            {false} { \legacy_if_gset_false:n { K@endfloat } }
+          }
+          { \PackageError{ecofin}{Invalid~endfloat~value~`#1'}{Use~true~or~false.} }
+      },
+    endfloat .default:n = true,
+    endfloat .usage:n   = load,
+
+    bibunits-backend .code:n =
+      {
+        \str_case:nnF {#1}
+          {
+            {true}  { \legacy_if_gset_true:n  { K@bibunits } }
+            {false} { \legacy_if_gset_false:n { K@bibunits } }
+          }
+          { \PackageError{ecofin}{Invalid~bibunits-backend~value~`#1'}{Use~true~or~false.} }
+      },
+    bibunits-backend .default:n = true,
+    bibunits-backend .usage:n   = load,
+
+    bibunits   .meta:n  = { bibunits-backend = true, dualbib = true },
+    bibunits   .usage:n = load,
+    nobibunits .meta:n  = { bibunits-backend = false, dualbib = false },
+    nobibunits .usage:n = load,
+
+    tikz .code:n =
+      {
+        \str_case:nnF {#1}
+          {
+            {true}  { \legacy_if_gset_true:n  { K@tikz } }
+            {false} { \legacy_if_gset_false:n { K@tikz } }
+          }
+          { \PackageError{ecofin}{Invalid~tikz~value~`#1'}{Use~true~or~false.} }
+      },
+    tikz    .default:n = true,
+    tikz    .usage:n   = load,
+    notikz  .meta:n    = { tikz = false },
+    notikz  .usage:n   = load,
+
+    paper .choices:nn =
+      { letterpaper, a4paper }
+      { \tl_gset_eq:NN \K@paper \l_keys_choice_tl },
+    paper       .usage:n = load,
+    letterpaper .meta:n  = { paper = letterpaper },
+    letterpaper .usage:n = load,
+    a4paper     .meta:n  = { paper = a4paper },
+    a4paper     .usage:n = load,
+
+    % --- options for \ecofinsetup; the mode names also work as package options ---
+    mode .choices:nn =
+      { wp, blind, article, blindarticle, titlepage, oa, blindoa }
+      { \tl_gset_eq:NN \g_ecofin_mode_tl \l_keys_choice_tl },
+    mode    .usage:n = general,
+    wp      .meta:n  = { mode = wp },
+    wp      .usage:n = general,
+    blind   .meta:n  = { mode = blind },
+    blind   .usage:n = general,
+    article .meta:n  = { mode = article },
+    article .usage:n = general,
+    oa      .meta:n  = { mode = oa },
+    oa      .usage:n = general,
+
+    anonymous .code:n =
+      {
+        \bool_gset_true:N \g_ecofin_anon_override_set_bool
+        \str_case:nnF {#1}
+          {
+            {true}  { \bool_gset_true:N  \g_ecofin_anon_override_bool \legacy_if_gset_true:n  { K@anonymous } }
+            {false} { \bool_gset_false:N \g_ecofin_anon_override_bool \legacy_if_gset_false:n { K@anonymous } }
+          }
+          { \PackageError{ecofin}{Invalid~anonymous~value~`#1'}{Use~true~or~false.} }
+      },
+    anonymous .default:n = true,
+    anonymous .usage:n   = preamble,
+
+    sections .choices:nn =
+      { arabic, roman, unnumbered }
+      { \tl_gset_eq:NN \g_ecofin_sections_tl \l_keys_choice_tl },
+    sections           .usage:n = preamble,
+    romansections      .meta:n  = { sections = roman },
+    romansections      .usage:n = preamble,
+    unnumberedsections .meta:n  = { sections = unnumbered },
+    unnumberedsections .usage:n = preamble,
+
+    dualbib .code:n =
+      {
+        \str_case:nnF {#1}
+          {
+            {true}  { \legacy_if_gset_true:n  { K@dualbib } }
+            {false} { \legacy_if_gset_false:n { K@dualbib } }
+          }
+          { \PackageError{ecofin}{Invalid~dualbib~value~`#1'}{Use~true~or~false.} }
+      },
+    dualbib .default:n = true,
+    dualbib .usage:n   = preamble,
+
+    bib .choices:nn =
+      { dual, single }
+      {
+        \str_if_eq:VnTF \l_keys_choice_tl { dual }
+          { \legacy_if_gset_true:n  { K@dualbib } }
+          { \legacy_if_gset_false:n { K@dualbib } }
+      },
+    bib .usage:n = preamble,
+
+    appeqreset .code:n =
+      {
+        \str_case:nnF {#1}
+          {
+            {true}  { \legacy_if_gset_true:n  { K@appeqreset } }
+            {false} { \legacy_if_gset_false:n { K@appeqreset } }
+          }
+          { \PackageError{ecofin}{Invalid~appeqreset~value~`#1'}{Use~true~or~false.} }
+      },
+    appeqreset .default:n = true,
+    appeqreset .usage:n   = preamble,
+
+    appeq .choices:nn =
+      { reset, continue }
+      {
+        \str_if_eq:VnTF \l_keys_choice_tl { reset }
+          { \legacy_if_gset_true:n  { K@appeqreset } }
+          { \legacy_if_gset_false:n { K@appeqreset } }
+      },
+    appeq .usage:n = preamble,
+
+    parskip .choices:nn =
+      { half, tight }
+      {
+        \str_if_eq:VnTF \l_keys_choice_tl { tight }
+          { \legacy_if_gset_true:n  { K@tightparskip } }
+          { \legacy_if_gset_false:n { K@tightparskip } }
+      },
+    parskip      .usage:n = preamble,
+    halfparskip  .meta:n  = { parskip = half },
+    halfparskip  .usage:n = preamble,
+    tightparskip .meta:n  = { parskip = tight },
+    tightparskip .usage:n = preamble,
+
+    titlesize .choices:nn =
+      { large, huge }
+      {
+        \str_if_eq:VnTF \l_keys_choice_tl { huge }
+          { \legacy_if_gset_true:n  { K@hugetitle } }
+          { \legacy_if_gset_false:n { K@hugetitle } }
+      },
+    titlesize .usage:n = preamble,
+    hugetitle .meta:n  = { titlesize = huge },
+    hugetitle .usage:n = preamble,
+
+    linenumbers .code:n =
+      {
+        \str_case:nnF {#1}
+          {
+            {true}  { \legacy_if_gset_true:n  { K@linenumbers } }
+            {false} { \legacy_if_gset_false:n { K@linenumbers } }
+          }
+          { \PackageError{ecofin}{Invalid~linenumbers~value~`#1'}{Use~true~or~false.} }
+      },
+    linenumbers .default:n = true,
+    linenumbers .usage:n   = preamble,
+
+    draft .code:n =
+      {
+        \str_case:nnF {#1}
+          {
+            {true}  { \legacy_if_gset_true:n  { K@draft } }
+            {false} { \legacy_if_gset_false:n { K@draft } }
+          }
+          { \PackageError{ecofin}{Invalid~draft~value~`#1'}{Use~true~or~false.} }
+      },
+    draft .default:n = true,
+    draft .usage:n   = preamble,
+
+    authorcolumns .choices:nn =
+      { auto, 1, 2, 3 }
+      { \tl_gset_eq:NN \g_ecofin_authorcols_tl \l_keys_choice_tl },
+    authorcolumns .usage:n = preamble,
+
+    abstractstyle .choices:nn =
+      { inset, full }
+      { \tl_gset_eq:NN \g_ecofin_abstractstyle_tl \l_keys_choice_tl },
+    abstractstyle .usage:n = preamble,
+
+    runninghead .choices:nn =
+      { none, title, authors }
+      { \tl_gset_eq:NN \g_ecofin_runninghead_tl \l_keys_choice_tl },
+    runninghead .usage:n = preamble,
+
+    dateprefix  .tl_gset:N = \g_ecofin_dateprefix_tl,
+    dateprefix  .usage:n   = preamble,
+    oarefheader .tl_gset:N = \g_ecofin_oarefheader_tl,
+    oarefheader .usage:n   = preamble,
+
+    showoa           .bool_gset:N = \g_ecofin_requestoa_bool,
+    showoa           .usage:n     = preamble,
+    showabstract     .bool_gset:N = \g_ecofin_showabstract_bool,
+    showabstract     .usage:n     = preamble,
+    showkeywords     .bool_gset:N = \g_ecofin_showkeywords_bool,
+    showkeywords     .usage:n     = preamble,
+    showjel          .bool_gset:N = \g_ecofin_showjel_bool,
+    showjel          .usage:n     = preamble,
+    showthanks       .bool_gset:N = \g_ecofin_showthanks_bool,
+    showthanks       .usage:n     = preamble,
+    showdisclosure   .bool_gset:N = \g_ecofin_showdisclosure_bool,
+    showdisclosure   .usage:n     = preamble,
+    showdeclarations .bool_gset:N = \g_ecofin_showdeclarations_bool,
+    showdeclarations .usage:n     = preamble,
+    showtoc          .bool_gset:N = \g_ecofin_showtoc_bool,
+    showtoc          .usage:n     = preamble,
+    showoatoc        .bool_gset:N = \g_ecofin_showoatoc_bool,
+    showoatoc        .usage:n     = preamble,
+    showappendix     .bool_gset:N = \g_ecofin_showappendix_bool,
+    showappendix     .usage:n     = preamble,
+    showreaderqa     .bool_gset:N = \g_ecofin_showreaderqa_bool,
+    showreaderqa     .usage:n     = preamble,
+
+    unknown .code:n =
+      {
+        \PackageError{ecofin}{Unknown~option~`\l_keys_key_str'}
+          {Check~\string\usepackage[...]{ecofin}~or~\string\ecofinsetup{...}~keys.}
+      }
+  }
+
+\ProcessKeyOptions[ecofin]
+
+\NewDocumentCommand{\ecofinsetup}{m}{\keys_set:nn { ecofin } {#1}}
+\@onlypreamble\ecofinsetup
+\ExplSyntaxOff
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 1. Engine and encoding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RequirePackage{iftex}
+\ifpdftex
+  \input{glyphtounicode}
+  \pdfgentounicode=1
+  \RequirePackage[T1]{fontenc}
+  \def\K@declunicode#1/#2\@nil{\DeclareUnicodeCharacter{#1}{\ensuremath{#2}}}
+  \@for\K@upair:=%
+    2212/-,00D7/\times,00B2/{}^2,2264/\leq,2265/\geq,2192/\rightarrow,%
+    03B1/\alpha,03B2/\beta,03B3/\gamma,03B4/\delta,03B5/\epsilon,%
+    03B6/\zeta,03B7/\eta,03B8/\theta,03B9/\iota,03BA/\kappa,%
+    03BB/\lambda,03BC/\mu,03BD/\nu,03BE/\xi,03BF/o,03C0/\pi,%
+    03C1/\rho,03C2/\varsigma,03C3/\sigma,03C4/\tau,03C5/\upsilon,%
+    03C6/\phi,03C7/\chi,03C8/\psi,03C9/\omega,0394/\Delta%
+  \do{\expandafter\K@declunicode\K@upair\@nil}
+  \ifK@geistserif
+    \PackageInfo{ecofin}{Option `geistserif' uses OpenType fonts under LuaLaTeX/XeLaTeX; using Source Serif Pro fallback under pdfLaTeX}%
+    \K@geistseriffalse
+  \fi
+  \ifK@geisttitle
+    \PackageInfo{ecofin}{Option `geisttitle' uses OpenType fonts under LuaLaTeX/XeLaTeX; using Source Serif Pro fallback under pdfLaTeX}%
+    \K@geisttitlefalse
+  \fi
+\fi
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 2. Text and maths fonts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\ecofindisplayfont}{}
+\newcommand{\K@tabnums}{}
+
+\iftutex
+  \RequirePackage{amsmath}
+  \RequirePackage{mathtools}
+  \RequirePackage{amsthm}
+  \RequirePackage{fontspec}
+  \RequirePackage[warnings-off={mathtools-colon,mathtools-overbracket}]{unicode-math}
+  \newcommand{\K@loadsourceserifmain}{%
+    \setmainfont{SourceSerifPro}[
+      Ligatures=TeX,
+      Extension=.otf,
+      UprightFont=*-Regular,
+      BoldFont=*-Bold,
+      ItalicFont=*-RegularIt,
+      BoldItalicFont=*-BoldIt,
+      SmallCapsFont=*-Regular,
+      SmallCapsFeatures={Letters=SmallCaps}
+    ]%
+    \renewcommand{\K@tabnums}{\rmfamily\addfontfeatures{Numbers={Lining,Tabular}}}%
+  }
+  \newcommand{\K@setgeistmain}[2]{%
+    \setmainfont{#1}[
+      #2
+      Ligatures=TeX,
+      AutoFakeBold=2.2,
+      AutoFakeSlant=0.16,
+      Numbers=Lining
+    ]%
+    \newfontfamily\K@geisttabfont{#1}[
+      #2
+      Ligatures=TeX,
+      AutoFakeBold=2.2,
+      AutoFakeSlant=0.16,
+      Numbers={Tabular,Lining}
+    ]%
+    \newfontfamily\K@scfamily{SourceSerifPro}[
+      Extension=.otf,
+      UprightFont=*-Regular,
+      BoldFont=*-Bold,
+      SmallCapsFont=*-Regular,
+      SmallCapsFeatures={Letters=SmallCaps}
+    ]%
+    \DeclareRobustCommand{\scshape}{\K@scfamily\addfontfeatures{Letters=SmallCaps}}%
+    \let\sc\scshape
+    \renewcommand{\K@tabnums}{\K@geisttabfont}%
+  }
+  \newcommand{\K@setgeisthead}[2]{%
+    \newfontfamily\K@geistheadfont{#1}[
+      #2
+      Ligatures=TeX,
+      AutoFakeBold=2.0,
+      AutoFakeSlant=0.16
+    ]%
+    \renewcommand{\ecofindisplayfont}{\K@geistheadfont}%
+  }
+
+  \newcommand{\K@geistfontdir}{}
+  \newcommand{\K@findfontdir}[1]{%
+    \def\K@geistfontdir{}%
+    \IfFileExists{./fonts/#1}{%
+      \def\K@geistfontdir{./fonts/}%
+    }{%
+      \IfFileExists{../fonts/#1}{%
+        \def\K@geistfontdir{../fonts/}%
+      }{%
+        \IfFileExists{../../fonts/#1}{%
+          \def\K@geistfontdir{../../fonts/}%
+        }{}%
+      }%
+    }%
+  }
+
+  \newcommand{\K@geisthb}{}
+  \ifluatex
+    \def\K@geisthb{Renderer=HarfBuzz,}%
+  \fi
+
+  \ifK@geistserif
+    \K@findfontdir{GeistSerif-Regular.ttf}%
+    \ifx\K@geistfontdir\@empty
+      \IfFontExistsTF{Geist Serif}{%
+        \edef\K@do@geistmain{\noexpand\K@setgeistmain{Geist Serif}{\K@geisthb}}%
+        \K@do@geistmain
+      }{%
+        \PackageWarningNoLine{ecofin}{Geist Serif font not found; falling back to Source Serif Pro}%
+        \K@loadsourceserifmain
+      }%
+    \else
+      \edef\K@do@geistmain{\noexpand\K@setgeistmain{GeistSerif-Regular.ttf}{Path=\K@geistfontdir,\K@geisthb}}%
+      \K@do@geistmain
+    \fi
+  \else
+    \K@loadsourceserifmain
+    \ifK@geisttitle
+      \K@findfontdir{GeistSerif-Regular.ttf}%
+      \ifx\K@geistfontdir\@empty
+        \ifluatex
+          \K@findfontdir{GeistSerif-Variable.ttf}%
+          \ifx\K@geistfontdir\@empty
+            \IfFontExistsTF{Geist Serif}{%
+              \K@setgeisthead{Geist Serif}{Renderer=HarfBuzz,}%
+            }{%
+              \PackageWarningNoLine{ecofin}{Geist Serif font not found; using Source Serif Pro headings}%
+            }%
+          \else
+            \edef\K@do@geisthead{\noexpand\K@setgeisthead{GeistSerif-Variable.ttf}{Path=\K@geistfontdir,}}%
+            \K@do@geisthead
+          \fi
+        \else
+          \IfFontExistsTF{Geist Serif}{%
+            \K@setgeisthead{Geist Serif}{}%
+          }{%
+            \PackageWarningNoLine{ecofin}{Geist Serif font not found; using Source Serif Pro headings}%
+          }%
+        \fi
+      \else
+        \edef\K@do@geisthead{\noexpand\K@setgeisthead{GeistSerif-Regular.ttf}{Path=\K@geistfontdir,\K@geisthb}}%
+        \K@do@geisthead
+      \fi
+    \fi
+  \fi
+
+  \setmonofont{SourceCodePro}[
+    Extension=.otf,
+    UprightFont=*-Regular,
+    BoldFont=*-Bold,
+    ItalicFont=*-RegularIt,
+    Scale=MatchLowercase
+  ]
+
+  % OpenType maths font (default: Latin Modern Math)
+  \def\K@tmpcm{cm}%
+  \def\K@tmpstix{stix}%
+  \ifx\K@mathfont\K@tmpcm
+    \setmathfont{latinmodern-math.otf}%
+  \else
+    \ifx\K@mathfont\K@tmpstix
+      \setmathfont{STIXTwoMath-Regular.otf}%
+    \else
+      \setmathfont{LibertinusMath-Regular.otf}%
+    \fi
+  \fi
+  \DeclareRobustCommand{\bm}[1]{\symbfit{#1}}%
+  \renewcommand{\boldsymbol}[1]{\symbfit{#1}}%
+\else
+  \providecommand{\hmmax}{0}%
+  \providecommand{\bmmax}{2}%
+  \def\K@tmpcm{cm}%
+  \def\K@tmpstix{stix}%
+  \ifx\K@mathfont\K@tmpcm
+    \RequirePackage{lmodern}%
+    \RequirePackage{amsmath}%
+    \RequirePackage{mathtools}%
+    \RequirePackage{amsthm}%
+    \RequirePackage{amssymb}%
+  \else
+    \ifx\K@mathfont\K@tmpstix
+      \RequirePackage{amsmath}%
+      \RequirePackage{mathtools}%
+      \RequirePackage{amsthm}%
+      \RequirePackage[notext]{stix2}%
+    \else
+      \RequirePackage{amsmath}%
+      \RequirePackage{mathtools}%
+      \RequirePackage{amsthm}%
+      \IfFileExists{libertinust1math.sty}{%
+        \RequirePackage{libertinust1math}%
+      }{%
+        \RequirePackage{lmodern}%
+        \RequirePackage{amssymb}%
+      }%
+    \fi
+  \fi
+  \RequirePackage{sourceserifpro}
+  \RequirePackage{sourcecodepro}
+  \RequirePackage{bm}
+  \renewcommand{\K@tabnums}{\fontfamily{SourceSerifPro-TLF}\selectfont}
+\fi
+
+\providecommand{\Perp}{\mathrel{\perp\mkern-9mu\perp}}
+\providecommand{\indep}{\mathrel{\perp\mkern-9mu\perp}}
+
+% TeX logos with kerning that suits Source Serif Pro and Geist Serif
+\DeclareRobustCommand{\LaTeX}{L\kern-.26em{\sbox\z@ T\vbox to\ht\z@{\hbox{\check@mathfonts\fontsize\sf@size\z@\math@fontsfalse\selectfont A}\vss}}\kern-.12em\TeX}
+\providecommand{\BibTeX}{{\scshape Bib}\kern-.08em\TeX}
+\providecommand{\XeLaTeX}{X\kern-.125em\lower.5ex\hbox{E}\kern-.125em\LaTeX}
+\providecommand{\LuaLaTeX}{Lua\kern-.04em\LaTeX}
+
+\RequirePackage[hyphens]{url}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 3. Colours (defined before TikZ and hyperref load)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\PassOptionsToPackage{dvipsnames,table}{xcolor}
+\RequirePackage{xcolor}
+\RequirePackage{colortbl}
+% Colour of citation links
+\definecolor{brickred}{rgb}{0.8, 0.25, 0.33}
+% Figure colours (Okabe-Ito and Tol; the same as in figstyle_ecofin.py)
+\definecolor{ecofinblue}{HTML}{0072B2}
+\definecolor{ecofinvermilion}{HTML}{D55E00}
+\definecolor{ecofingreen}{HTML}{009E73}
+\definecolor{ecofinpurple}{HTML}{CC79A7}
+\definecolor{ecofinwine}{HTML}{882255}
+\definecolor{ecofinsky}{HTML}{56B4E9}
+\definecolor{ecofinolive}{HTML}{4C6422}
+\definecolor{ecofinshade}{gray}{0.9}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 4. Page, line spacing and paragraphs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RequirePackage{geometry}
+\geometry{
+  paper=\K@paper,
+  top=1in,
+  bottom=1.2in,
+  left=1in,
+  right=1in,
+  marginparwidth=0.82in,
+  marginparsep=0.10in,
+  footskip=0.7in,
+  headheight=14pt
+}
+
+\PassOptionsToPackage{onehalfspacing}{setspace}
+\RequirePackage{setspace}
+\RequirePackage{microtype}
+\ifxetex
+  \microtypesetup{protrusion=true,expansion=false}
+\else
+  \microtypesetup{protrusion=true,expansion=true}
+\fi
+\RequirePackage{ragged2e}
+\RequirePackage{csquotes}
+\RequirePackage{etoolbox}
+\RequirePackage{xparse}
+\RequirePackage{needspace}
+\RequirePackage{verbatim}
+\RequirePackage[mathlines]{lineno}
+\renewcommand{\linenumberfont}{\normalfont\scriptsize\color{gray}}
+
+\raggedbottom
+\emergencystretch=1em
+\tolerance=1000
+\widowpenalty=10000
+\clubpenalty=10000
+\displaywidowpenalty=10000
+
+\newcommand{\K@setdisplayskips}{%
+  \setlength{\abovedisplayskip}{6pt plus 2pt minus 2pt}%
+  \setlength{\belowdisplayskip}{6pt plus 2pt minus 2pt}%
+  \setlength{\abovedisplayshortskip}{6pt plus 2pt minus 2pt}%
+  \setlength{\belowdisplayshortskip}{6pt plus 2pt minus 2pt}%
+}
+\AddToHook{cmd/normalsize/after}[ecofin]{\K@setdisplayskips}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 5. Tables, figures and floats
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RequirePackage{graphicx}
+\RequirePackage{float}
+\RequirePackage{placeins}
+\RequirePackage{adjustbox}
+\RequirePackage{array}
+\RequirePackage{dcolumn}
+\newcolumntype{d}[1]{D{.}{.}{#1}}
+\RequirePackage{siunitx}
+\sisetup{
+  mode=text,
+  reset-text-family=false,
+  reset-text-series=false,
+  group-digits=false,
+  input-open-uncertainty=,
+  input-close-uncertainty=,
+  table-align-text-pre=false,
+  table-align-text-post=false,
+  input-symbols={()[]-+*}
+}
+\RequirePackage{booktabs}
+\RequirePackage{multirow}
+\RequirePackage{tabularx}
+\RequirePackage{longtable}
+\RequirePackage{threeparttable}
+\RequirePackage{rotating}
+\RequirePackage{pdflscape}
+\RequirePackage{caption}
+\RequirePackage{subcaption}
+
+\ifK@tikz
+  \RequirePackage{tikz}
+  \RequirePackage{pgfplots}
+  \pgfplotsset{compat=1.18}
+  \usetikzlibrary{arrows.meta,positioning,patterns,shapes.geometric}
+  \usepgfplotslibrary{groupplots}
+  \RequirePackage{tcolorbox}
+\fi
+
+% Float placement: keep tables and figures near the text that cites them
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.07}
+\renewcommand{\floatpagefraction}{0.75}
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{5}
+
+\g@addto@macro\@floatboxreset\centering
+\renewcommand{\arraystretch}{1.1}
+\setlength{\textfloatsep}{10pt plus 2pt minus 4pt}
+\setlength{\floatsep}{10pt plus 2pt minus 2pt}
+\setlength{\intextsep}{10pt plus 2pt minus 2pt}
+
+% Lining, equal-width numerals inside tables only
+\AtBeginEnvironment{tabular}{\K@tabnums}
+\AtBeginEnvironment{tabular*}{\footnotesize\K@tabnums}
+\AtBeginEnvironment{tabularx}{\K@tabnums}
+\AtBeginEnvironment{longtable}{\K@tabnums}
+
+% Small-caps TABLE / FIGURE labels; captions above tables and figures, not hyphenated
+\renewcommand{\tablename}{\textsc{table}}
+\renewcommand{\figurename}{\textsc{figure}}
+\DeclareCaptionFont{ecofinnohyphen}{\hyphenpenalty=10000\exhyphenpenalty=10000}
+\DeclareCaptionLabelSeparator{ecofinperiod}{.\hspace{0.75em}}
+\captionsetup{labelsep=ecofinperiod,font+=ecofinnohyphen}
+\captionsetup[table]{position=top}
+\captionsetup[figure]{position=top}
+\captionsetup[sub]{labelformat=simple,labelsep=ecofinperiod,size=small}
+\renewcommand{\thesubfigure}{\Alph{subfigure}}
+
+% Table notes: justified, flush left; ecofintablenotes is the public environment
+\renewcommand{\TPTnoteSettings}{%
+  \setlength\leftmargin{1.5em}%
+  \setlength\labelwidth{.5em}%
+  \setlength\labelsep{.2em}%
+  \rightskip\tabcolsep \leftskip\tabcolsep
+  \justifying
+}
+\@ifundefined{TPT@opt@flushleft}{}{%
+  \def\TPT@opt@flushleft{%
+    \def\TPTnoteSettings{%
+      \labelsep.2em \leftmargin\z@ \labelwidth\z@
+      \rightskip\z@skip \leftskip\z@skip
+      \footnotesize\setstretch{1}\justifying
+    }%
+    \def\TPTnoteLabel##1{\hspace\labelsep\tnote{##1}\hfil}%
+  }%
+}
+\NewDocumentEnvironment{ecofintablenotes}{}
+  {\begin{tablenotes}[flushleft]\footnotesize}
+  {\end{tablenotes}}
+
+% figurenotes: 6pt above the notes, width 0.94\textwidth by default
+\NewDocumentEnvironment{figurenotes}{O{0.94\textwidth}}
+  {\par\vspace{6pt}\noindent\begin{minipage}{#1}\footnotesize\setstretch{1}\justifying\noindent}
+  {\par\end{minipage}\par\vspace{2pt}}
+
+% \note (kept for older papers) and small helpers for tables
+\NewDocumentCommand{\note}{o g}{%
+  \par\vspace{6pt}\noindent\parbox{\textwidth}{\footnotesize\setstretch{1}\justifying
+    \IfValueT{#1}{\textit{#1}:\quad}\IfValueT{#2}{#2}}%
+}
+\providecommand{\sym}[1]{\ensuremath{^{#1}}}
+\providecommand{\est}[3]{\shortstack[r]{#1\\{[#2, #3]}}}
+% \panelrow must expand like a plain macro: it starts with \addlinespace (a \noalign),
+% which TeX accepts at the start of a table row only if it arrives by expansion. A
+% document command does not expand there and stopped with "Misplaced \noalign".
+\newcommand{\panelrow}[2]{%
+  \addlinespace[4pt]\multicolumn{#1}{@{}l}{\textit{#2}}\\[2pt]%
+}
+
+% Numbers from the analysis: \DeclareValue{key}{value}, then \val{key} in the text
+\ExplSyntaxOn
+\NewDocumentCommand{\DeclareValue}{m m}
+  { \prop_gput:Nnn \g_ecofin_scalars_prop {#1} {#2} }
+\NewDocumentCommand{\val}{m}
+  {
+    \prop_get:NnNTF \g_ecofin_scalars_prop {#1} \l_ecofin_toggle_val_tl
+      { \tl_use:N \l_ecofin_toggle_val_tl }
+      {
+        \PackageWarning{ecofin}{Undefined~empirical~scalar~`#1'}
+        \textbf{??}
+      }
+  }
+\ExplSyntaxOff
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 6. Title page: title, authors, running heads, footnotes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RequirePackage[bottom]{footmisc}
+\RequirePackage{titling}
+\newcommand{\titlesize}{\LARGE}
+\setlength{\droptitle}{-2em}
+\pretitle{\begin{center}\ecofindisplayfont\bfseries\titlesize}
+\posttitle{\end{center}}
+
+\thanksmarkseries{fnsymbol}
+\renewcommand{\@fnsymbol}[1]{%
+  \ifcase#1\or
+    *\or
+    {\ensuremath{\star \star}}\or
+    \#\or
+    \dagger\or
+    \ddagger\or
+    \mathsection\or
+    \mathparagraph\or
+    **\or
+    \dagger\dagger\else\@ctrerr\fi}
+
+\let\K@origtitle\title
+\let\K@origauthor\author
+\let\K@origdate\date
+\let\K@origthanks\thanks
+\let\K@origmaketitle\maketitle
+\let\K@origabstract\abstract
+\let\K@origendabstract\endabstract
+
+% Title block of a standalone online appendix
+\NewDocumentCommand{\ecofinstandaloneoatitle}{O{Online Appendix} m g}{%
+  \begin{center}
+    {\ecofindisplayfont\bfseries\setstretch{1.12}\LARGE #1:\\[0.25em] #2\par}%
+    \IfValueT{#3}{\vspace{0.3em}{\ecofindisplayfont\mdseries\Large #3\par}}%
+  \end{center}
+  \vspace{0.6em}
+}
+
+\RequirePackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\fancypagestyle{plain}{%
+  \fancyhf{}%
+  \renewcommand{\headrulewidth}{0pt}%
+}
+
+\ExplSyntaxOn
+\tl_new:N \g_ecofin_avail_journal_tl
+\tl_new:N \g_ecofin_avail_url_tl
+\bool_new:N \g_ecofin_avail_set_bool
+
+\NewDocumentCommand{\available}{o m}
+  {
+    \bool_gset_true:N \g_ecofin_avail_set_bool
+    \IfValueTF {#1}
+      { \tl_gset:Nn \g_ecofin_avail_journal_tl {#1} }
+      { \tl_gclear:N \g_ecofin_avail_journal_tl }
+    \tl_gset:Nn \g_ecofin_avail_url_tl {#2}
+  }
+\let\paperurl\available
+
+% --- title, authors and first-page details as given by the author ---
+\tl_new:N  \g_ecofin_title_tl
+\tl_new:N  \g_ecofin_shorttitle_tl
+\tl_new:N  \g_ecofin_subtitle_tl
+\tl_new:N  \g_ecofin_date_tl
+\tl_new:N  \g_ecofin_thanks_tl
+\tl_new:N  \g_ecofin_disclosure_tl
+\tl_new:N  \g_ecofin_abstract_tl
+\tl_new:N  \g_ecofin_keywords_tl
+\tl_new:N  \g_ecofin_jel_tl
+
+\seq_new:N  \g_ecofin_auth_names_seq
+\seq_new:N  \g_ecofin_auth_insts_seq
+\seq_new:N  \g_ecofin_auth_notes_seq
+\seq_new:N  \g_ecofin_deferred_notes_seq
+
+% Authors given with \author[id,*]{Name}, \affil[id]{...}, \email, \orcid
+\prop_new:N \g_ecofin_affil_short_prop
+\prop_new:N \g_ecofin_affil_addr_prop
+\seq_new:N  \g_ecofin_std_names_seq
+\seq_new:N  \g_ecofin_std_keys_seq
+\seq_new:N  \g_ecofin_std_emails_seq
+\seq_new:N  \g_ecofin_std_orcids_seq
+\seq_new:N  \g_ecofin_std_notes_seq
+\bool_new:N \g_ecofin_used_structured_bool
+\bool_new:N \g_ecofin_std_maketitle_pending_bool
+
+\bool_new:N \l_ecofin_auth_corr_bool
+\tl_new:N   \l_ecofin_auth_orcid_tl
+\tl_new:N   \l_ecofin_auth_note_tl
+\tl_new:N   \l_ecofin_auth_addr_tl
+\tl_new:N   \l_ecofin_built_note_tl
+\int_new:N  \l_ecofin_saved_fn_int
+\dim_new:N  \l_ecofin_cell_wd_dim
+
+\keys_define:nn { ecofin/author }
+  {
+    corresponding .bool_set:N    = \l_ecofin_auth_corr_bool,
+    corresponding .default:n     = true,
+    orcid         .tl_set:N      = \l_ecofin_auth_orcid_tl,
+    note          .tl_set:N      = \l_ecofin_auth_note_tl,
+    address       .tl_set:N      = \l_ecofin_auth_addr_tl,
+    affiliation   .tl_set:N      = \l_ecofin_auth_addr_tl,
+  }
+
+\NewDocumentCommand{\ecofintitle}{o +m}
+  {
+    \tl_gset:Nn \g_ecofin_title_tl {#2}
+    \IfValueTF {#1}
+      { \tl_gset:Nn \g_ecofin_shorttitle_tl {#1} }
+      { \tl_gset:Nn \g_ecofin_shorttitle_tl {#2} }
+    \K@origtitle{#2}
+  }
+\NewDocumentCommand{\ecofinsubtitle}{+m}{\tl_gset:Nn \g_ecofin_subtitle_tl {#1}}
+\NewDocumentCommand{\ecofindate}{m}{\tl_gset:Nn \g_ecofin_date_tl {#1}\K@origdate{#1}}
+\NewDocumentCommand{\ecofinthanks}{+m}{\tl_gset:Nn \g_ecofin_thanks_tl {#1}}
+\NewDocumentCommand{\ecofindisclosure}{+m}{\tl_gset:Nn \g_ecofin_disclosure_tl {#1}}
+\NewDocumentCommand{\ecofinabstract}{+m}{\tl_gset:Nn \g_ecofin_abstract_tl {#1}}
+\NewDocumentCommand{\ecofinkeywords}{+m}{\tl_gset:Nn \g_ecofin_keywords_tl {#1}}
+\NewDocumentCommand{\ecofinjel}{+m}{\tl_gset:Nn \g_ecofin_jel_tl {#1}}
+\NewDocumentCommand{\ecofinoarefheader}{m}{\tl_gset:Nn \g_ecofin_oarefheader_tl {#1}}
+
+% Standard LaTeX commands for the front matter.
+% \title and \author are defined the classic way on purpose. A document command
+% (\RenewDocumentCommand) uses the names "\title " and "\author " (with a trailing
+% space) as scratch macros on first use. Those are the names of the LaTeX kernel's
+% own inner macros for the robust \title and \author, which \K@origtitle and
+% \K@origauthor still call, so the first \title{...} sent TeX into an endless loop.
+\cs_set_protected:Npn \title
+  { \@ifnextchar [ { \__ecofin_title_opt:w } { \__ecofin_title_plain:n } }
+\cs_new_protected:Npn \__ecofin_title_opt:w [#1] #2 { \ecofintitle[#1]{#2} }
+\cs_new_protected:Npn \__ecofin_title_plain:n #1 { \ecofintitle{#1} }
+\providecommand{\subtitle}{}
+\RenewDocumentCommand{\subtitle}{+m}{\ecofinsubtitle{#1}}
+\RenewDocumentCommand{\date}{m}{\ecofindate{#1}}
+\providecommand{\keywords}{}
+\RenewDocumentCommand{\keywords}{+m}{\ecofinkeywords{#1}}
+\providecommand{\jel}{}
+\RenewDocumentCommand{\jel}{+m}{\ecofinjel{#1}}
+\providecommand{\disclosure}{}
+\RenewDocumentCommand{\disclosure}{+m}{\ecofindisclosure{#1}}
+
+% \thanks{...} written on its own in the preamble sets the unmarked first-page
+% acknowledgement. Inside \title{...} and \author{...}, and after \begin{document},
+% \thanks keeps its ordinary LaTeX meaning.
+\cs_set_protected:Npn \thanks #1 { \ecofinthanks{#1} }
+\AddToHook{begindocument/before}[ecofin/thanks]{\let\thanks\K@origthanks}
+
+% \affil[id]{Short Institution}[Optional Full Department/Street Address]
+\NewDocumentCommand{\affil}{O{1} m o}
+  {
+    \bool_gset_true:N \g_ecofin_used_structured_bool
+    \prop_gput:Nnn \g_ecofin_affil_short_prop {#1} {#2}
+    \IfValueTF {#3}
+      { \prop_gput:Nnn \g_ecofin_affil_addr_prop {#1} {#3} }
+      { \prop_gput:Nnn \g_ecofin_affil_addr_prop {#1} {#2} }
+  }
+
+% \author[id,*]{Name}; without [id] and \affil it behaves as in plain LaTeX
+\cs_set_protected:Npn \author
+  { \@ifnextchar [ { \__ecofin_author_opt:w } { \__ecofin_author_plain:n } }
+\cs_new_protected:Npn \__ecofin_author_opt:w [#1] #2
+  {
+    \bool_gset_true:N \g_ecofin_used_structured_bool
+    \seq_gput_right:Nn \g_ecofin_std_names_seq  {#2}
+    \seq_gput_right:Nn \g_ecofin_std_keys_seq   {#1}
+    \seq_gput_right:Nn \g_ecofin_std_emails_seq {}
+    \seq_gput_right:Nn \g_ecofin_std_orcids_seq {}
+    \seq_gput_right:Nn \g_ecofin_std_notes_seq  {}
+  }
+\cs_new_protected:Npn \__ecofin_author_plain:n #1
+  {
+    \tl_if_blank:nTF {#1}
+      { \K@origauthor{} }
+      {
+        \K@origauthor{#1}
+        \seq_gput_right:Nn \g_ecofin_std_names_seq  {#1}
+        \seq_gput_right:Nn \g_ecofin_std_keys_seq   {1}
+        \seq_gput_right:Nn \g_ecofin_std_emails_seq {}
+        \seq_gput_right:Nn \g_ecofin_std_orcids_seq {}
+        \seq_gput_right:Nn \g_ecofin_std_notes_seq  {}
+      }
+  }
+
+\cs_new_protected:Npn \__ecofin_set_last_seq:NNn #1 #2 #3
+  {
+    \int_compare:nNnT { \seq_count:N #1 } > { 0 }
+      {
+        \seq_gpop_right:NN #1 #2
+        \seq_gput_right:Nn #1 {#3}
+      }
+  }
+\tl_new:N \l__ecofin_pop_tl
+\tl_new:N \l__ecofin_std_name_tl
+
+\providecommand{\email}{}
+\RenewDocumentCommand{\email}{m}
+  {
+    \bool_gset_true:N \g_ecofin_used_structured_bool
+    \__ecofin_set_last_seq:NNn \g_ecofin_std_emails_seq \l__ecofin_pop_tl {#1}
+  }
+\providecommand{\orcid}{}
+\RenewDocumentCommand{\orcid}{m}
+  {
+    \bool_gset_true:N \g_ecofin_used_structured_bool
+    \__ecofin_set_last_seq:NNn \g_ecofin_std_orcids_seq \l__ecofin_pop_tl {#1}
+  }
+\providecommand{\authornote}{}
+\RenewDocumentCommand{\authornote}{+m}
+  {
+    \bool_gset_true:N \g_ecofin_used_structured_bool
+    \__ecofin_set_last_seq:NNn \g_ecofin_std_notes_seq \l__ecofin_pop_tl {#1}
+  }
+
+\cs_new_protected:Npn \__ecofin_resolve_std_authors:
+  {
+    \bool_if:NT \g_ecofin_used_structured_bool
+      {
+        \int_compare:nNnT { \seq_count:N \g_ecofin_auth_names_seq } = { 0 }
+          {
+            \int_step_inline:nn { \seq_count:N \g_ecofin_std_names_seq }
+              {
+                \tl_set:Nx \l_tmpa_tl { \seq_item:Nn \g_ecofin_std_keys_seq {##1} }
+                \bool_set_false:N \l_ecofin_auth_corr_bool
+                \tl_if_in:NnT \l_tmpa_tl {*}
+                  {
+                    \bool_set_true:N \l_ecofin_auth_corr_bool
+                    \tl_remove_all:Nn \l_tmpa_tl {*}
+                    \tl_remove_all:Nn \l_tmpa_tl {,}
+                    \tl_trim_spaces:N \l_tmpa_tl
+                  }
+                \prop_get:NVNTF \g_ecofin_affil_short_prop \l_tmpa_tl \l_tmpb_tl
+                  { }
+                  { \tl_clear:N \l_tmpb_tl }
+                \prop_get:NVNTF \g_ecofin_affil_addr_prop \l_tmpa_tl \l_ecofin_auth_addr_tl
+                  { }
+                  { \tl_set_eq:NN \l_ecofin_auth_addr_tl \l_tmpb_tl }
+                \tl_set:Nx \l_ecofin_auth_orcid_tl { \seq_item:Nn \g_ecofin_std_orcids_seq {##1} }
+                \tl_set:Nx \l_ecofin_auth_note_tl  { \seq_item:Nn \g_ecofin_std_notes_seq  {##1} }
+                \tl_set:Nx \l__ecofin_pop_tl       { \seq_item:Nn \g_ecofin_std_emails_seq {##1} }
+                \tl_set:Nx \l__ecofin_std_name_tl  { \seq_item:Nn \g_ecofin_std_names_seq  {##1} }
+                \use:e
+                  {
+                    \exp_not:N \ecofinauthor
+                      [
+                        \bool_if:NT \l_ecofin_auth_corr_bool { corresponding, }
+                        orcid   = { \exp_not:V \l_ecofin_auth_orcid_tl },
+                        note    = { \exp_not:V \l_ecofin_auth_note_tl },
+                        address = { \exp_not:V \l_ecofin_auth_addr_tl }
+                      ]
+                      { \exp_not:V \l__ecofin_std_name_tl }
+                      { \exp_not:V \l_tmpb_tl }
+                      { \exp_not:V \l__ecofin_pop_tl }
+                  }
+              }
+          }
+      }
+  }
+
+% \ecofinauthor[orcid=..., corresponding, note={...}]{Name}{Institution}{email}
+\NewDocumentCommand{\ecofinauthor}{O{} m m G{}}
+  {
+    \group_begin:
+      \bool_set_false:N \l_ecofin_auth_corr_bool
+      \tl_clear:N \l_ecofin_auth_orcid_tl
+      \tl_clear:N \l_ecofin_auth_note_tl
+      \tl_clear:N \l_ecofin_auth_addr_tl
+      \keys_set:nn { ecofin/author } {#1}
+
+      \tl_set:Nn \l_tmpa_tl {#2}
+      \tl_trim_spaces:N \l_tmpa_tl
+      \tl_set:Nn \l_tmpb_tl {#3}
+      \tl_trim_spaces:N \l_tmpb_tl
+
+      \tl_clear:N \l_ecofin_built_note_tl
+      \bool_if:NT \l_ecofin_auth_corr_bool
+        { \tl_put_right:Nn \l_ecofin_built_note_tl { Corresponding~author.~ } }
+      \tl_if_empty:NF \l_ecofin_auth_note_tl
+        {
+          \tl_put_right:NV \l_ecofin_built_note_tl \l_ecofin_auth_note_tl
+          \tl_put_right:Nn \l_ecofin_built_note_tl { .~ }
+        }
+      \tl_if_empty:NTF \l_ecofin_auth_addr_tl
+        {
+          \tl_if_empty:NF \l_tmpb_tl
+            {
+              \tl_put_right:NV \l_ecofin_built_note_tl \l_tmpb_tl
+              \tl_put_right:Nn \l_ecofin_built_note_tl { .~ }
+            }
+        }
+        {
+          \tl_put_right:NV \l_ecofin_built_note_tl \l_ecofin_auth_addr_tl
+          \tl_put_right:Nn \l_ecofin_built_note_tl { .~ }
+        }
+      \tl_if_blank:nF {#4}
+        {
+          \tl_put_right:Nn \l_ecofin_built_note_tl
+            { Email:~\href{mailto:#4}{\nolinkurl{#4}}.~ }
+        }
+      \tl_if_empty:NF \l_ecofin_auth_orcid_tl
+        {
+          \tl_put_right:Nx \l_ecofin_built_note_tl
+            {
+              ORCID:~\exp_not:N \href
+                {https://orcid.org/\tl_use:N \l_ecofin_auth_orcid_tl}
+                {\exp_not:N \nolinkurl{\tl_use:N \l_ecofin_auth_orcid_tl}}.
+            }
+        }
+
+      \seq_gput_right:NV \g_ecofin_auth_names_seq \l_tmpa_tl
+      \seq_gput_right:NV \g_ecofin_auth_insts_seq \l_tmpb_tl
+      \seq_gput_right:NV \g_ecofin_auth_notes_seq \l_ecofin_built_note_tl
+    \group_end:
+  }
+
+% Footnotes of the author block are set after the block; their link targets are kept
+\cs_new_protected:Npn \__ecofin_queue_fn:n #1
+  {
+    \tl_if_blank:nF {#1}
+      {
+        \footnotemark
+        \cs_if_exist:NTF \Hy@footnote@currentHref
+          {
+            \seq_gput_right:Nx \g_ecofin_deferred_notes_seq
+              {
+                \exp_not:N \__ecofin_emit_fn:nnn
+                  { \int_use:c { c@footnote } }
+                  { \exp_not:o { \Hy@footnote@currentHref } }
+                  { \exp_not:n {#1} }
+              }
+          }
+          {
+            \seq_gput_right:Nx \g_ecofin_deferred_notes_seq
+              {
+                \exp_not:N \__ecofin_emit_fn:nnn
+                  { \int_use:c { c@footnote } }
+                  { }
+                  { \exp_not:n {#1} }
+              }
+          }
+      }
+  }
+
+\cs_new_protected:Npn \__ecofin_emit_fn:nnn #1 #2 #3
+  {
+    \group_begin:
+      \int_set:cn { c@footnote } {#1}
+      \tl_if_blank:nF {#2}
+        { \cs_set:Npn \Hy@footnote@currentHref {#2} }
+      \footnotetext{#3}
+    \group_end:
+  }
+
+\cs_new_protected:Npn \__ecofin_emit_unmarked_note:n #1
+  {
+    \group_begin:
+      \renewcommand{\thefootnote}{}%
+      \long\def\@makefntext##1{\noindent\footnotesize\setstretch{1}##1}%
+      \footnotetext[0]{#1}%
+    \group_end:
+  }
+
+\cs_new_protected:Npn \__ecofin_render_author_cell:nn #1 #2
+  {
+    \parbox[t]{#2}
+      {
+        \centering\setstretch{1.08}
+        {\large\scshape \seq_item:Nn \g_ecofin_auth_names_seq {#1}}%
+        \exp_args:Nx \__ecofin_queue_fn:n { \seq_item:Nn \g_ecofin_auth_notes_seq {#1} }
+        \par
+        \tl_set:Nx \l_tmpb_tl { \seq_item:Nn \g_ecofin_auth_insts_seq {#1} }
+        \tl_if_blank:VF \l_tmpb_tl
+          {
+            \vspace{0.18em}
+            {\small\scshape\color{black!78} \tl_use:N \l_tmpb_tl \par}
+          }
+      }
+  }
+
+\cs_new_protected:Npn \__ecofin_render_author_row:nnn #1 #2 #3
+  {
+    % #1 = start index, #2 = count in this row (1, 2, or 3), #3 = max cols
+    \noindent
+    \makebox[\linewidth][c]
+      {
+        \int_case:nn {#2}
+          {
+            {1}
+              {
+                \__ecofin_render_author_cell:nn {#1} { 0.72\linewidth }
+              }
+            {2}
+              {
+                \__ecofin_render_author_cell:nn {#1} { 0.45\linewidth }
+                \hspace{0.04\linewidth}
+                \__ecofin_render_author_cell:nn { \int_eval:n {#1 + 1} } { 0.45\linewidth }
+              }
+            {3}
+              {
+                \__ecofin_render_author_cell:nn {#1} { 0.305\linewidth }
+                \hspace{0.03\linewidth}
+                \__ecofin_render_author_cell:nn { \int_eval:n {#1 + 1} } { 0.305\linewidth }
+                \hspace{0.03\linewidth}
+                \__ecofin_render_author_cell:nn { \int_eval:n {#1 + 2} } { 0.305\linewidth }
+              }
+          }
+      }
+    \par
+  }
+
+\cs_new_protected:Npn \__ecofin_render_author_grid:
+  {
+    \int_set:Nn \l_tmpa_int { \seq_count:N \g_ecofin_auth_names_seq }
+    \int_compare:nNnT { \l_tmpa_int } > { 0 }
+      {
+        \group_begin:
+          \int_set:Nn \l_ecofin_saved_fn_int { \value{footnote} }
+          \setcounter{footnote}{0}
+          \seq_gclear:N \g_ecofin_deferred_notes_seq
+          \int_compare:nNnTF { \l_tmpa_int } > { 9 }
+            { \renewcommand{\thefootnote}{\arabic{footnote}} }
+            { \renewcommand{\thefootnote}{\@fnsymbol{\value{footnote}}} }
+
+          % Acknowledgements and disclosures: unmarked, first among the page-1 footnotes
+          \tl_clear:N \l_tmpa_tl
+          \bool_if:NT \g_ecofin_showthanks_bool
+            {
+              \tl_if_empty:NF \g_ecofin_thanks_tl
+                {
+                  \tl_put_right:NV \l_tmpa_tl \g_ecofin_thanks_tl
+                  \tl_put_right:Nn \l_tmpa_tl { ~ }
+                }
+            }
+          \bool_if:NT \g_ecofin_showdisclosure_bool
+            {
+              \tl_if_empty:NF \g_ecofin_disclosure_tl
+                { \tl_put_right:NV \l_tmpa_tl \g_ecofin_disclosure_tl }
+            }
+          \tl_if_blank:VF \l_tmpa_tl
+            { \__ecofin_emit_unmarked_note:n { \tl_use:N \l_tmpa_tl } }
+
+          % Rows of the author block (1, 2, 3, 2+2, 3+2, 3+3)
+          \int_set:Nn \l_tmpb_int { 3 }
+          \str_case:Vn \g_ecofin_authorcols_tl
+            {
+              {1} { \int_set:Nn \l_tmpb_int { 1 } }
+              {2} { \int_set:Nn \l_tmpb_int { 2 } }
+              {3} { \int_set:Nn \l_tmpb_int { 3 } }
+              {auto}
+                {
+                  \int_compare:nNnTF { \l_tmpa_int } = { 4 }
+                    { \int_set:Nn \l_tmpb_int { 2 } }
+                    { \int_set:Nn \l_tmpb_int { 3 } }
+                }
+            }
+
+          \int_set:Nn \l_ecofin_idx_int { 1 }
+          \bool_while_do:nn { \int_compare_p:n { \l_ecofin_idx_int <= \l_tmpa_int } }
+            {
+              \int_compare:nNnT { \l_ecofin_idx_int } > { 1 }
+                { \vspace{0.95em} }
+              \int_set:Nn \l_ecofin_rem_int { \l_tmpa_int - \l_ecofin_idx_int + 1 }
+              % Four authors left with three columns: two rows of two, not three and one
+              \bool_lazy_and:nnTF
+                { \int_compare_p:nNn { \l_tmpb_int } = { 3 } }
+                { \int_compare_p:nNn { \l_ecofin_rem_int } = { 4 } }
+                { \int_set:Nn \l_ecofin_row_int { 2 } }
+                {
+                  \int_set:Nn \l_ecofin_row_int
+                    { \int_min:nn { \l_tmpb_int } { \l_ecofin_rem_int } }
+                }
+              \__ecofin_render_author_row:nnn
+                { \l_ecofin_idx_int }
+                { \l_ecofin_row_int }
+                { \l_tmpb_int }
+              \int_add:Nn \l_ecofin_idx_int { \l_ecofin_row_int }
+            }
+
+          \par\nobreak
+          \seq_map_inline:Nn \g_ecofin_deferred_notes_seq {##1}
+          \seq_gclear:N \g_ecofin_deferred_notes_seq
+          \setcounter{footnote}{ \int_use:N \l_ecofin_saved_fn_int }
+        \group_end:
+      }
+  }
+\int_new:N \l_ecofin_idx_int
+\int_new:N \l_ecofin_rem_int
+\int_new:N \l_ecofin_row_int
+
+\NewDocumentCommand{\ecofinmaketitle}{O{Online~Appendix}}
+  {
+    \legacy_if:nTF { K@standaloneoa }
+      {
+        % Standalone online appendix: its own title block, authors optional
+        \tl_if_empty:NTF \g_ecofin_subtitle_tl
+          { \ecofinstandaloneoatitle[#1]{ \tl_use:N \g_ecofin_title_tl } }
+          { \ecofinstandaloneoatitle[#1]{ \tl_use:N \g_ecofin_title_tl }{ \tl_use:N \g_ecofin_subtitle_tl } }
+        \legacy_if:nF { K@anonymous }
+          {
+            \int_compare:nNnT { \seq_count:N \g_ecofin_auth_names_seq } > { 0 }
+              {
+                \begin{center}
+                  {\scshape \seq_use:Nn \g_ecofin_auth_names_seq { ,\space }\par}
+                \end{center}
+              }
+          }
+        \tl_if_empty:NF \g_ecofin_date_tl
+          {
+            \begin{center}
+              {\normalsize
+                \tl_if_empty:NF \g_ecofin_dateprefix_tl
+                  { {\scshape \tl_use:N \g_ecofin_dateprefix_tl}\space }
+                \tl_use:N \g_ecofin_date_tl \par}
+            \end{center}
+            \vspace{0.4em}
+          }
+      }
+      {
+        % Working paper, anonymous copy, article and title page
+        \thispagestyle{plain}
+        \vspace*{-1.4em}
+        \begin{center}
+          \ecofindisplayfont\bfseries\setstretch{1.1}
+          \legacy_if:nTF { K@hugetitle } { \Huge } { \LARGE }
+          \tl_use:N \g_ecofin_title_tl \par
+          \tl_if_empty:NF \g_ecofin_subtitle_tl
+            {
+              \vspace{0.35em}
+              {\ecofindisplayfont\mdseries\Large\color{black!84} \tl_use:N \g_ecofin_subtitle_tl \par}
+            }
+        \end{center}
+
+        \legacy_if:nF { K@anonymous }
+          {
+            \vspace{0.65em}
+            \__ecofin_render_author_grid:
+          }
+
+        \tl_if_empty:NF \g_ecofin_date_tl
+          {
+            \vspace{0.65em}
+            \begin{center}
+              {\normalsize
+                \tl_if_empty:NF \g_ecofin_dateprefix_tl
+                  { {\scshape \tl_use:N \g_ecofin_dateprefix_tl}\space }
+                \tl_use:N \g_ecofin_date_tl \par}
+            \end{center}
+          }
+
+        \bool_if:NT \g_ecofin_showabstract_bool
+          {
+            \tl_if_empty:NF \g_ecofin_abstract_tl
+              {
+                \vspace{0.85em}
+                \str_if_eq:VnTF \g_ecofin_abstractstyle_tl { inset }
+                  {
+                    \begin{list}{}{%
+                      \setlength{\leftmargin}{0.045\textwidth}%
+                      \setlength{\rightmargin}{0.045\textwidth}%
+                      \setlength{\topsep}{0pt}%
+                      \setlength{\partopsep}{0pt}%
+                      \setlength{\parsep}{0pt}%
+                      \setlength{\listparindent}{0pt}%
+                    }
+                    \item\relax
+                    {\setstretch{1.05}\small
+                      \begin{center}{\normalsize\scshape Abstract}\end{center}
+                      \vspace{0.15em}
+                      \justifying\noindent \tl_use:N \g_ecofin_abstract_tl \par
+                      \bool_if:nT
+                        { \g_ecofin_showkeywords_bool || \g_ecofin_showjel_bool }
+                        { \vspace{0.65em} }
+                      \bool_if:NT \g_ecofin_showkeywords_bool
+                        {
+                          \tl_if_empty:NF \g_ecofin_keywords_tl
+                            {
+                              {\raggedright\noindent\textbf{Keywords:}\space
+                                \tl_use:N \g_ecofin_keywords_tl \par}
+                              \vspace{0.2em}
+                            }
+                        }
+                      \bool_if:NT \g_ecofin_showjel_bool
+                        {
+                          \tl_if_empty:NF \g_ecofin_jel_tl
+                            {
+                              \noindent\textbf{JEL~classification:}\space
+                                \tl_use:N \g_ecofin_jel_tl \par
+                            }
+                        }
+                    }
+                    \end{list}
+                  }
+                  {
+                    {\setstretch{1}
+                      \K@origabstract
+                        \noindent \tl_use:N \g_ecofin_abstract_tl
+                      \K@origendabstract
+                      \medskip
+                      \bool_if:NT \g_ecofin_showkeywords_bool
+                        {
+                          \tl_if_empty:NF \g_ecofin_keywords_tl
+                            {
+                              {\raggedright\noindent\textbf{Keywords:}\space
+                                \tl_use:N \g_ecofin_keywords_tl \par}
+                            }
+                        }
+                      \bool_if:NT \g_ecofin_showjel_bool
+                        {
+                          \tl_if_empty:NF \g_ecofin_jel_tl
+                            {
+                              \noindent\textbf{JEL~classification:}\space
+                                \tl_use:N \g_ecofin_jel_tl \par
+                            }
+                        }
+                    }
+                  }
+              }
+          }
+
+        % With \maketitle followed by the abstract environment, the environment prints the
+        % contents after the abstract; printing them here as well gave them twice.
+        \bool_if:nT { \g_ecofin_showtoc_bool && ! \g_ecofin_std_maketitle_pending_bool }
+          {
+            \vspace{0.8em}
+            {\singlespacing\small\tableofcontents}
+          }
+
+        \bool_if:NF \g_ecofin_std_maketitle_pending_bool
+          {
+            \legacy_if:nTF { K@titleonly }
+              { \clearpage \end{document} }
+              { \newpage }
+          }
+      }
+  }
+
+% \maketitle followed by \begin{abstract}...\end{abstract}
+\RenewDocumentEnvironment{abstract}{+b}
+  {
+    \bool_if:NTF \g_ecofin_std_maketitle_pending_bool
+      {
+        \bool_gset_false:N \g_ecofin_std_maketitle_pending_bool
+        \tl_gset:Nn \g_ecofin_abstract_tl {#1}
+        \bool_if:NT \g_ecofin_showabstract_bool
+          {
+            \vspace{0.85em}
+            \begin{list}{}{%
+              \setlength{\leftmargin}{0.045\textwidth}%
+              \setlength{\rightmargin}{0.045\textwidth}%
+              \setlength{\topsep}{0pt}%
+              \setlength{\partopsep}{0pt}%
+              \setlength{\parsep}{0pt}%
+              \setlength{\listparindent}{0pt}%
+            }
+            \item\relax
+            {\setstretch{1.05}\small
+              \begin{center}{\normalsize\scshape Abstract}\end{center}
+              \vspace{0.15em}
+              \justifying\noindent #1 \par
+              \bool_if:nT { \g_ecofin_showkeywords_bool || \g_ecofin_showjel_bool } { \vspace{0.65em} }
+              \bool_if:NT \g_ecofin_showkeywords_bool
+                {
+                  \tl_if_empty:NF \g_ecofin_keywords_tl
+                    { {\raggedright\noindent\textbf{Keywords:}\space \tl_use:N \g_ecofin_keywords_tl \par}\vspace{0.2em} }
+                }
+              \bool_if:NT \g_ecofin_showjel_bool
+                {
+                  \tl_if_empty:NF \g_ecofin_jel_tl
+                    { \noindent\textbf{JEL~classification:}\space \tl_use:N \g_ecofin_jel_tl \par }
+                }
+            }
+            \end{list}
+          }
+        \bool_if:NT \g_ecofin_showtoc_bool
+          { \vspace{0.8em}{\singlespacing\small\tableofcontents} }
+        \legacy_if:nTF { K@titleonly }
+          { \AddToHookNext { env/abstract/after } { \clearpage \end{document} } }
+          { \newpage }
+      }
+      {
+        \K@origabstract #1 \K@origendabstract
+      }
+  }
+  {}
+\ExplSyntaxOff
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 7. Headings, theorems and lists
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RequirePackage[nobottomtitles*]{titlesec}
+\renewcommand{\bottomtitlespace}{0.10\textheight}
+
+\titleformat{\section}[block]
+  {\centering\normalfont\ecofindisplayfont\Large\bfseries}
+  {\thesection.}{0.85em}{}
+\titleformat{\subsection}
+  {\normalfont\ecofindisplayfont\large\bfseries}
+  {\thesubsection}{0.7em}{}
+\titleformat{\subsubsection}
+  {\normalfont\ecofindisplayfont\normalsize\bfseries}
+  {\thesubsubsection}{0.5em}{}
+\titleformat{\paragraph}[runin]{\itshape}{}{0pt}{}[\@addpunct{.}]
+
+\newtheoremstyle{paper}{0.5em}{0.5em}{\itshape}{}{\scshape}{.}{0.75em}{}
+\theoremstyle{paper}
+\newtheorem{theorem}{theorem}
+\newtheorem{proposition}{proposition}
+\newtheorem{lemma}{lemma}
+\newtheorem{corollary}{corollary}
+\newtheorem{definition}{definition}
+\newtheorem{assumption}{assumption}
+\newtheorem{remark}{remark}
+\newtheorem{prediction}{prediction}
+\renewcommand{\proofname}{\upshape\scshape proof}
+\renewenvironment{proof}[1][\proofname]{%
+  \par\parskip0pt\pushQED{\qed}\normalfont\topsep0.5em\relax
+  \trivlist\item[\hskip\labelsep\upshape\scshape#1\@addpunct{.}\hspace{0.5em}]\ignorespaces
+}{%
+  \popQED\endtrivlist\@endpefalse
+}
+
+\RequirePackage{enumitem}
+\setlist[itemize,1]{leftmargin=\parindent, label=\color{gray}{\upshape\textbullet}}
+\setlist[itemize,2]{leftmargin=2\parindent, label=\color{gray}{\upshape\textendash}}
+\setlist[enumerate,1]{leftmargin=\parindent, label=\color{gray}{\upshape\alph*.}}
+\setlist[enumerate,2]{leftmargin=2\parindent, label=\color{gray}{\upshape\roman*.}}
+\setlist{nosep}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 8. References, links between split files, contents, hyperref (loaded last)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RequirePackage{natbib}
+\setcitestyle{authoryear,round,comma,aysep={}}
+\renewcommand{\bibfont}{\small}
+\setlength{\bibsep}{0pt}
+\setlength{\bibhang}{\parindent}
+
+\def\K@bibstyle{bibliography}
+\def\K@bibfile{references}
+\newcommand{\ecofinbibstyle}[1]{\def\K@bibstyle{#1}}
+\newcommand{\ecofinbibfile}[1]{\def\K@bibfile{#1}}
+
+\ifK@bibunits
+  \RequirePackage{bibunits}
+\fi
+\ifK@endfloat
+  \RequirePackage[tablesfirst,nomarkers]{endfloat}
+\fi
+
+% Dotted contents lines with room for labels such as IA.A
+\renewcommand*\l@section{\@dottedtocline{1}{0em}{2.6em}}
+\renewcommand*\l@subsection{\@dottedtocline{2}{2.6em}{3.2em}}
+
+\RequirePackage{xr-hyper}
+\RequirePackage[
+  colorlinks=true,
+  pdfusetitle,
+  urlcolor=blue,
+  citecolor=brickred,
+  linkcolor=blue,
+  bookmarksnumbered=true,
+  plainpages=false
+]{hyperref}
+\hypersetup{unicode=true,pdfencoding=unicode}
+\RequirePackage{bookmark}
+
+\pdfstringdefDisableCommands{%
+  \def\ecofindisplayfont{}%
+  \def\LaTeX{LaTeX}%
+  \def\TeX{TeX}%
+  \def\BibTeX{BibTeX}%
+  \def\XeLaTeX{XeLaTeX}%
+  \def\LuaLaTeX{LuaLaTeX}%
+  \def\sc{}%
+  \def\scshape{}%
+  \def\mdseries{}%
+  \def\Large{}%
+  \def\LARGE{}%
+  \def\Huge{}%
+  \def\thanks#1{}%
+  \def\sym#1{#1}%
+  \def\\{ }%
+}
+
+% cleveref, if asked for with \usepackage[cleveref]{ecofin} or loaded by the author
+\AddToHook{package/cleveref/after}[ecofin]{%
+  \crefname{theorem}{theorem}{theorems}%
+  \Crefname{theorem}{Theorem}{Theorems}%
+  \crefname{proposition}{proposition}{propositions}%
+  \Crefname{proposition}{Proposition}{Propositions}%
+  \crefname{lemma}{lemma}{lemmas}%
+  \Crefname{lemma}{Lemma}{Lemmas}%
+  \crefname{corollary}{corollary}{corollaries}%
+  \Crefname{corollary}{Corollary}{Corollaries}%
+  \crefname{definition}{definition}{definitions}%
+  \Crefname{definition}{Definition}{Definitions}%
+  \crefname{assumption}{assumption}{assumptions}%
+  \Crefname{assumption}{Assumption}{Assumptions}%
+  \crefname{remark}{remark}{remarks}%
+  \Crefname{remark}{Remark}{Remarks}%
+  \crefname{prediction}{prediction}{predictions}%
+  \Crefname{prediction}{Prediction}{Predictions}%
+  \crefname{figure}{Figure}{Figures}%
+  \Crefname{figure}{Figure}{Figures}%
+  \crefname{table}{Table}{Tables}%
+  \Crefname{table}{Table}{Tables}%
+}
+\ifK@cleveref
+  \RequirePackage[nameinlink,noabbrev,capitalize]{cleveref}
+\fi
+
+% References to panels of a figure
+\NewDocumentCommand{\subfigref}{m m}{Figure~\ref{#1},~Panel~\MakeUppercase{#2}}
+\NewDocumentCommand{\panelref}{m m m}{Figure~\ref{#1},~Panels~\MakeUppercase{#2}--\MakeUppercase{#3}}
+
+% Link targets of citations are kept apart for each reference list, so a work cited
+% in the paper and in the online appendix gives no duplicate target.
+\newcounter{K@bibscope}
+\def\K@citescope{main}
+\newcommand{\ecofincitescope}[1]{\def\K@citescope{#1}}
+
+\ifK@bibunits
+  \AddToHook{env/bibunit/begin}[ecofin]{%
+    \stepcounter{K@bibscope}%
+    \edef\K@citescope{bu.\arabic{K@bibscope}}%
+  }
+  \AddToHook{env/bibunit/end}[ecofin]{%
+    \def\K@citescope{main}%
+  }
+\fi
+
+\@ifundefined{hyper@natlinkstart}{}{%
+  \let\K@natstart\hyper@natlinkstart
+  \let\K@natanchor\hyper@natanchorstart
+  \let\K@natbreak\hyper@natlinkbreak
+  \def\hyper@natlinkstart#1{\K@natstart{\K@citescope.#1}}%
+  \def\hyper@natanchorstart#1{\K@natanchor{\K@citescope.#1}}%
+  \def\hyper@natlinkbreak#1#2{\K@natbreak{#1}{\K@citescope.#2}}%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 9. Settling the mode at \begin{document}; show and hide
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\ExplSyntaxOn
+\cs_new_protected:Npn \__ecofin_finalize_preamble:
+  {
+    % 0. Authors given with \author[id,*]{Name} and \affil
+    \__ecofin_resolve_std_authors:
+
+    % 1. A mode passed by build.py overrides \ecofinsetup
+    \cs_if_exist:NT \EcofinBuildMode
+      { \exp_args:Nnx \keys_set:nn { ecofin } { mode = \EcofinBuildMode } }
+    \cs_if_exist:NT \EcofinBuildOptions
+      { \exp_args:Nnx \keys_set:nn { ecofin } { \EcofinBuildOptions } }
+
+    % 2. What the mode means
+    \legacy_if_gset_true:n  { K@main }
+    \legacy_if_gset_false:n { K@titleonly }
+    \legacy_if_gset_false:n { K@standaloneoa }
+    \legacy_if_gset_false:n { K@anonymous }
+    \bool_if:NTF \g_ecofin_requestoa_bool
+      { \legacy_if_gset_true:n  { K@oa } }
+      { \legacy_if_gset_false:n { K@oa } }
+
+    \str_case:Vn \g_ecofin_mode_tl
+      {
+        {wp}           { }
+        {blind}        { \legacy_if_gset_true:n  { K@anonymous } }
+        {article}      { \legacy_if_gset_false:n { K@oa } }
+        {blindarticle} { \legacy_if_gset_true:n  { K@anonymous } \legacy_if_gset_false:n { K@oa } }
+        {titlepage}    { \legacy_if_gset_false:n { K@main } \legacy_if_gset_false:n { K@oa } \legacy_if_gset_true:n { K@titleonly } }
+        {oa}           { \legacy_if_gset_false:n { K@main } \legacy_if_gset_true:n  { K@oa } \legacy_if_gset_true:n { K@standaloneoa } }
+        {blindoa}      { \legacy_if_gset_true:n  { K@anonymous } \legacy_if_gset_false:n { K@main } \legacy_if_gset_true:n { K@oa } \legacy_if_gset_true:n { K@standaloneoa } }
+      }
+
+    \bool_if:NT \g_ecofin_anon_override_set_bool
+      {
+        \bool_if:NTF \g_ecofin_anon_override_bool
+          { \legacy_if_gset_true:n  { K@anonymous } }
+          { \legacy_if_gset_false:n { K@anonymous } }
+      }
+
+    % An anonymous copy never shows co-author notes
+    \legacy_if:nT { K@anonymous } { \legacy_if_gset_false:n { K@notes } }
+
+    \legacy_if:nT { K@dualbib }
+      {
+        \legacy_if:nF { K@bibunits }
+          {
+            \PackageWarningNoLine{ecofin}{dualbib=true~requested~with~nobibunits;~disabling~dualbib}
+            \legacy_if_gset_false:n { K@dualbib }
+          }
+      }
+
+    % 3. Section numbers
+    \str_case:Vn \g_ecofin_sections_tl
+      {
+        {arabic}
+          {
+            \renewcommand{\thesection}{\arabic{section}}
+            \renewcommand{\thesubsection}{\thesection.\arabic{subsection}}
+          }
+        {roman}
+          {
+            \renewcommand{\thesection}{\Roman{section}}
+            \renewcommand{\thesubsection}{\thesection.\Alph{subsection}}
+          }
+        {unnumbered}
+          { \setcounter{secnumdepth}{0} }
+      }
+
+    % 4. Paragraph skip, title size, line numbers
+    \legacy_if:nTF { K@tightparskip }
+      { \setlength{\parskip}{0pt plus 2pt} }
+      { \setlength{\parskip}{0.5\baselineskip} }
+    \legacy_if:nTF { K@hugetitle }
+      { \renewcommand{\titlesize}{\Huge} }
+      { \renewcommand{\titlesize}{\LARGE} }
+
+    % 5. Running heads and draft banner (no author names in an anonymous copy)
+    \fancyhead{}
+    \legacy_if:nTF { K@draft }
+      {
+        \fancyhead[C]{\color{gray}\scriptsize\scshape Working~Paper~Draft.~Please~Do~Not~Cite~Without~Permission}
+      }
+      {
+        \str_case:Vn \g_ecofin_runninghead_tl
+          {
+            {title}
+              { \fancyhead[C]{\color{gray}\footnotesize\scshape \tl_use:N \g_ecofin_shorttitle_tl} }
+            {authors}
+              {
+                \legacy_if:nF { K@anonymous }
+                  {
+                    \fancyhead[C]{\color{gray}\footnotesize\scshape \seq_use:Nn \g_ecofin_auth_names_seq { ,\space }}
+                  }
+              }
+          }
+      }
+
+    % 6. "See the latest version at" line on the title page (not in an anonymous copy)
+    \bool_if:NT \g_ecofin_avail_set_bool
+      {
+        \legacy_if:nF { K@anonymous }
+          {
+            \fancypagestyle{plain}
+              {
+                \fancyhf{}
+                \renewcommand{\headrulewidth}{0pt}
+                \fancyfoot[C]{\color{gray}\footnotesize
+                  \tl_if_empty:NF \g_ecofin_avail_journal_tl
+                    { Published~in~\emph{\tl_use:N \g_ecofin_avail_journal_tl}\;\textbullet\; }
+                  See~the~latest~version~at~\exp_args:NV \url \g_ecofin_avail_url_tl
+                }
+              }
+          }
+      }
+
+    % 7. \maketitle, and an anonymous copy without names in the text or the PDF details
+    \int_compare:nNnTF { \seq_count:N \g_ecofin_auth_names_seq } > { 0 }
+      {
+        \renewcommand{\maketitle}
+          {
+            \tl_if_empty:NT \g_ecofin_abstract_tl
+              { \bool_gset_true:N \g_ecofin_std_maketitle_pending_bool }
+            \ecofinmaketitle
+          }
+      }
+      { }
+
+    \legacy_if:nTF { K@anonymous }
+      {
+        \int_compare:nNnF { \seq_count:N \g_ecofin_auth_names_seq } > { 0 }
+          {
+            \preauthor{}
+            \postauthor{}
+            \renewcommand{\author}[1]{\gdef\@author{}}
+            \gdef\@author{}
+            \renewcommand{\maketitle}{%
+              \begingroup
+                \renewcommand{\thanks}[1]{}%
+                \let\@thanks\@empty
+                \gdef\@author{}%
+                \K@origmaketitle
+              \endgroup
+            }
+          }
+        \ifdefined\pdfsuppressptexinfo\pdfsuppressptexinfo=15\relax\fi
+        \ifluatex\pdfvariable suppressoptionalinfo 512\relax\fi
+        \hypersetup{pdfauthor={},pdfcreator={},pdfproducer={}}
+        % hyperref (pdfusetitle) keeps its own copy of whatever \author received and
+        % writes it into the PDF when pdfauthor is empty. Empty that copy as well.
+        \cs_gset:cpn { Hy@author } { }
+      }
+      {
+        \int_compare:nNnT { \seq_count:N \g_ecofin_auth_names_seq } > { 0 }
+          {
+            \tl_set:Nx \l_tmpa_tl { \seq_use:Nn \g_ecofin_auth_names_seq { ,~ } }
+            \exp_args:Nx \hypersetup { pdfauthor = { \exp_not:V \l_tmpa_tl } }
+          }
+      }
+
+    \tl_if_empty:NF \g_ecofin_title_tl
+      {
+        \tl_if_empty:NTF \g_ecofin_subtitle_tl
+          { \exp_args:Nx \hypersetup { pdftitle = { \exp_not:V \g_ecofin_title_tl } } }
+          {
+            \exp_args:Nx \hypersetup
+              { pdftitle = { \exp_not:V \g_ecofin_title_tl :~ \exp_not:V \g_ecofin_subtitle_tl } }
+          }
+      }
+
+    % 8. Labels of the other file in a split build
+    \legacy_if:nT { K@standaloneoa }
+      {
+        \IfFileExists{xref/2_manuscript_anonymous.xref.aux}
+          { \externaldocument{xref/2_manuscript_anonymous.xref}[2_manuscript_anonymous.pdf] }
+          { }
+      }
+    \bool_if:nT
+      { \legacy_if_p:n { K@main } && ! \legacy_if_p:n { K@oa } }
+      {
+        \IfFileExists{xref/3_online_appendix.xref.aux}
+          { \externaldocument{xref/3_online_appendix.xref}[3_online_appendix.pdf] }
+          { }
+      }
+    \legacy_if:nTF { K@oa }      { \legacy_if_gset_true:n { ecofinoa } }      { \legacy_if_gset_false:n { ecofinoa } }
+    \legacy_if:nTF { K@dualbib } { \legacy_if_gset_true:n { ecofindualbib } } { \legacy_if_gset_false:n { ecofindualbib } }
+  }
+
+\AddToHook{begindocument/before}[ecofin/finalize]{\__ecofin_finalize_preamble:}
+
+\AtBeginDocument{%
+  \frenchspacing
+  \allowdisplaybreaks[1]%
+  \K@setdisplayskips
+  \setlength{\LTcapwidth}{\linewidth}%
+  \legacy_if:nT { K@linenumbers } { \linenumbers }%
+  \legacy_if:nT { K@standaloneoa }
+    { \InputIfFileExists{xref/2_manuscript_anonymous.eq.tex}{}{} }%
+  \bool_if:nT
+    { ! \g_ecofin_showtoc_bool && \g_ecofin_showoatoc_bool }
+    { \addtocontents{toc}{\protect\setcounter{tocdepth}{-1}} }%
+}
+
+% --- named switches for sections and blocks ---
+\NewDocumentCommand{\ecofintoggle}{m m}
+  {
+    \str_case:nnF {#2}
+      {
+        {true}  { \prop_gput:Nnn \g_ecofin_toggles_prop {#1} {true} }
+        {false} { \prop_gput:Nnn \g_ecofin_toggles_prop {#1} {false} }
+      }
+      { \PackageError{ecofin}{Toggle~`#1'~must~be~true~or~false}{Use~true~or~false.} }
+  }
+
+\keys_define:nn { ecofin/cond }
+  {
+    if .code:n =
+      {
+        \prop_get:NnNTF \g_ecofin_toggles_prop {#1} \l_ecofin_toggle_val_tl
+          {
+            \str_if_eq:VnTF \l_ecofin_toggle_val_tl {true}
+              { \bool_set_true:N  \l_ecofin_cond_bool }
+              { \bool_set_false:N \l_ecofin_cond_bool }
+          }
+          {
+            \bool_set_false:N \l_ecofin_cond_bool
+            \PackageError{ecofin}{Unknown~toggle~`#1'}{Declare~it~first~with~\string\ecofintoggle{#1}{true|false}.}
+          }
+      },
+    show .bool_set:N = \l_ecofin_cond_bool,
+  }
+
+\NewDocumentCommand{\ecofininput}{O{} m}
+  {
+    \group_begin:
+      \bool_set_true:N \l_ecofin_cond_bool
+      \keys_set:nn { ecofin/cond } {#1}
+      \bool_if:NTF \l_ecofin_cond_bool
+        { \group_end: \input{#2} }
+        { \group_end: }
+  }
+
+\NewDocumentEnvironment{ecofinblock}{O{} +b}
+  {
+    \bool_set_true:N \l_ecofin_cond_bool
+    \keys_set:nn { ecofin/cond } {#1}
+    \bool_if:NT \l_ecofin_cond_bool {#2}
+  }
+  {}
+
+% Inline draft note (shown only with draft=true and never in an anonymous copy)
+\NewDocumentCommand{\ecofinnote}{O{Note} +m}
+  {
+    \legacy_if:nT { K@draft }
+      {
+        \legacy_if:nF { K@anonymous }
+          {
+            {\footnotesize\sffamily\color{brickred}\textbf{[#1:}\space #2\textbf{]}}
+          }
+      }
+  }
+
+% Co-author margin comments and wording proposals (notes = show | hide).
+% The text must break into the same lines whether the notes are shown or hidden, so
+% nothing printed here takes room in the line: the mark has zero width, the note sits
+% in the margin, and the spaces around the command are treated alike in both states.
+% Limit: the notes are LaTeX \marginpar's. LaTeX allows a page break after a line that
+% carries one, also where the widow and orphan rules would otherwise forbid it, so in a
+% text crowded with notes a page break can fall one line earlier or later.
+\skip_new:N \l__ecofin_note_skip
+\int_new:N  \l__ecofin_note_sf_int
+
+% #1 = colour, #2 = mark (math material), #3 = label, #4 = text of the margin note,
+% #5 = r or l: the mark is drawn to the left (r) or to the right (l) of the current
+%      point, whichever side has the space, so that it does not sit on a letter
+\cs_new_protected:Npn \__ecofin_note_emit:nnnnn #1 #2 #3 #4 #5
+  {
+    \makebox[0pt][#5]{\smash{\raisebox{0.65ex}{\tiny\color{#1}$#2$}}}%
+    \marginpar{%
+      \RaggedRight\setstretch{0.96}\scriptsize\color{#1}%
+      \textbf{[#3]}\space {\color{black!82}#4}\par
+    }%
+  }
+
+\cs_new_protected:Npn \__ecofin_note:nnnn #1 #2 #3 #4
+  {
+    \legacy_if:nTF { K@notes }
+      {
+        \ifvmode
+          % At the start of a paragraph: begin it, as the text that follows would.
+          \leavevmode
+          \__ecofin_note_emit:nnnnn {#1} {#2} {#3} {#4} { r }
+          \exp_after:wN \ignorespaces
+        \else
+          \@bsphack
+          \skip_set:Nn \l__ecofin_note_skip   { \@savsk }
+          \int_set:Nn  \l__ecofin_note_sf_int { \@savsf }
+          \dim_compare:nNnTF { \l__ecofin_note_skip } > { \c_zero_dim }
+            { \__ecofin_note_emit:nnnnn {#1} {#2} {#3} {#4} { r } }
+            { \__ecofin_note_emit:nnnnn {#1} {#2} {#3} {#4} { l } }
+          \@savsk \l__ecofin_note_skip
+          \@savsf \l__ecofin_note_sf_int
+          \exp_after:wN \@esphack
+        \fi
+      }
+      { \@bsphack \@esphack }
+  }
+
+\NewDocumentCommand{\mnote}{O{Note} +m}
+  { \__ecofin_note:nnnn { ecofinwine } { \bullet } {#1} {#2} }
+
+\NewDocumentCommand{\discuss}{O{Discuss} +m}
+  { \__ecofin_note:nnnn { ecofinolive } { \blacktriangleright } {#1} {#2} }
+
+% \replace[who]{old wording}{new wording}: the new wording is printed in the text, in
+% colour while notes are shown; the old wording goes into the margin.
+\NewDocumentCommand{\replace}{O{Edit} +m +m}
+  {
+    \legacy_if:nTF { K@notes }
+      {
+        {\color{ecofinblue}#3}%
+        \marginpar{%
+          \RaggedRight\setstretch{0.96}\scriptsize\color{ecofinblue}%
+          \textbf{[#1]}\space {\color{black!82}was:~#2}\par
+        }%
+      }
+      {#3}
+  }
+\ExplSyntaxOff
+
+% The paper itself (left out when only the online appendix is built)
+\newenvironment{ecofinmain}
+  {\ifK@main\else\expandafter\comment\fi}
+  {\ifK@main\else\expandafter\endcomment\fi}
+
+% Declarations for journal sites (showdeclarations=true|false)
+\ExplSyntaxOn
+\newenvironment{ecofindeclarations}
+  {\bool_if:NF \g_ecofin_showdeclarations_bool { \comment }}
+  {\bool_if:NF \g_ecofin_showdeclarations_bool { \endcomment }}
+
+\newenvironment{ecofininappendix}
+  {
+    \bool_if:NTF \g_ecofin_showappendix_bool
+      {
+        \clearpage
+        \appendix
+        \titleformat{\section}[block]
+          {\centering\normalfont\ecofindisplayfont\Large\bfseries}
+          {Appendix~\thesection.}{0.85em}{}
+        \ecofinappendixsection{A}
+      }
+      { \comment }
+  }
+  {
+    \bool_if:NF \g_ecofin_showappendix_bool { \endcomment }
+  }
+
+\NewDocumentCommand{\K@readerqa@start}{O{Questions~a~Reader~May~Ask,~and~What~We~Did}}
+  { \ecofinappsubsection{#1} }
+\newenvironment{ecofinreaderqa}
+  {
+    \bool_if:NTF \g_ecofin_showreaderqa_bool
+      { \K@readerqa@start }
+      { \comment }
+  }
+  {
+    \bool_if:NF \g_ecofin_showreaderqa_bool { \endcomment }
+  }
+\ExplSyntaxOff
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 10. Online appendix: counters and link targets
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\AddToHook{cmd/appendix/after}[ecofin]{%
+  \renewcommand{\theHtable}{app.\thetable}%
+  \renewcommand{\theHfigure}{app.\thefigure}%
+  \renewcommand{\theHequation}{app.\theequation}%
+  \bookmarksetup{startatroot}%
+}
+\newcounter{K@appendixblock}
+
+\newcommand{\ecofinappendixsection}[1]{%
+  \stepcounter{K@appendixblock}%
+  \def\K@appendixletter{#1}%
+  \edef\K@appendixanchor{oa.\arabic{K@appendixblock}.#1}%
+  \setcounter{table}{0}%
+  \setcounter{figure}{0}%
+  \setcounter{theorem}{0}%
+  \setcounter{proposition}{0}%
+  \setcounter{lemma}{0}%
+  \setcounter{corollary}{0}%
+  \setcounter{definition}{0}%
+  \setcounter{assumption}{0}%
+  \setcounter{remark}{0}%
+  \setcounter{prediction}{0}%
+  \renewcommand{\thetable}{#1\arabic{table}}%
+  \renewcommand{\thefigure}{#1\arabic{figure}}%
+  \renewcommand{\thetheorem}{#1\arabic{theorem}}%
+  \renewcommand{\theproposition}{#1\arabic{proposition}}%
+  \renewcommand{\thelemma}{#1\arabic{lemma}}%
+  \renewcommand{\thecorollary}{#1\arabic{corollary}}%
+  \renewcommand{\thedefinition}{#1\arabic{definition}}%
+  \renewcommand{\theassumption}{#1\arabic{assumption}}%
+  \renewcommand{\theremark}{#1\arabic{remark}}%
+  \renewcommand{\theprediction}{#1\arabic{prediction}}%
+  \renewcommand{\theHtable}{\K@appendixanchor.table.\arabic{table}}%
+  \renewcommand{\theHfigure}{\K@appendixanchor.figure.\arabic{figure}}%
+  \renewcommand{\theHtheorem}{\K@appendixanchor.theorem.\arabic{theorem}}%
+  \renewcommand{\theHproposition}{\K@appendixanchor.prop.\arabic{proposition}}%
+  \renewcommand{\theHlemma}{\K@appendixanchor.lemma.\arabic{lemma}}%
+  \renewcommand{\theHcorollary}{\K@appendixanchor.cor.\arabic{corollary}}%
+  \renewcommand{\theHdefinition}{\K@appendixanchor.def.\arabic{definition}}%
+  \renewcommand{\theHassumption}{\K@appendixanchor.assump.\arabic{assumption}}%
+  \renewcommand{\theHremark}{\K@appendixanchor.rem.\arabic{remark}}%
+  \renewcommand{\theHprediction}{\K@appendixanchor.pred.\arabic{prediction}}%
+  \renewcommand{\theHsection}{\K@appendixanchor.section.\arabic{section}}%
+  \renewcommand{\theHsubsection}{\theHsection.\arabic{subsection}}%
+  \ifK@appeqreset
+    \setcounter{equation}{0}%
+    \renewcommand{\theequation}{#1\arabic{equation}}%
+    \renewcommand{\theHequation}{\K@appendixanchor.eq.\arabic{equation}}%
+  \fi
+}
+
+\newcommand{\ecofinappendix}[1][A]{%
+  \clearpage
+  \appendix
+  \ecofinappendixsection{#1}%
+}
+
+\ExplSyntaxOn
+\NewDocumentCommand{\K@oa@begin}{s O{Online~Appendix} o}
+  {
+    \bool_if:nTF
+      { \IfBooleanTF {#1} { \c_true_bool } { \c_false_bool } || \legacy_if_p:n { K@standaloneoa } }
+      {
+        \appendix
+        \IfValueTF {#3} { \ecofinappendixsection{#3} } { \ecofinappendixsection{A} }
+        \bookmarksetup{startatroot}
+        \pdfbookmark[0]{#2}{ecofin.oa.root.\arabic{K@appendixblock}}
+      }
+      {
+        \IfValueTF {#3} { \ecofinappendix[#3] } { \ecofinappendix[A] }
+        \bookmarksetup{startatroot}
+        \pdfbookmark[0]{#2}{ecofin.oa.root.\arabic{K@appendixblock}}
+        \section*{#2}
+      }
+    \bool_if:NT \g_ecofin_showoatoc_bool
+      {
+        \addtocontents{toc}{\protect\setcounter{tocdepth}{2}}
+        {\singlespacing\small\renewcommand{\contentsname}{}\tableofcontents}
+        \vspace{0.8em}
+      }
+    \legacy_if:nT { K@dualbib }
+      {
+        \edef\K@startbu{\noexpand\begin{bibunit}[\K@bibstyle]}\K@startbu
+      }
+  }
+
+\cs_new_protected:Npn \K@oa@end:
+  {
+    \legacy_if:nT { K@dualbib }
+      {
+        \renewcommand{\refname}{\tl_use:N \g_ecofin_oarefheader_tl}%
+        \edef\K@putbu{\noexpand\putbib[\K@bibfile]}\K@putbu
+        \end{bibunit}%
+      }
+  }
+
+\newenvironment{ecofinonlineappendix}
+  {\legacy_if:nTF { K@oa } { \K@oa@begin } { \comment }}
+  {\legacy_if:nTF { K@oa } { \K@oa@end: } { \endcomment }}
+
+\newenvironment{ecofinonlineappendix*}
+  {\legacy_if:nTF { K@oa } { \K@oa@begin* } { \comment }}
+  {\legacy_if:nTF { K@oa } { \K@oa@end: } { \endcomment }}
+\ExplSyntaxOff
+
+% Unnumbered online-appendix subsection with a PDF bookmark
+\newcommand{\ecofinappsubsection}[1]{%
+  \phantomsection
+  \subsection*{#1}%
+  \addcontentsline{toc}{subsection}{#1}%
+}
+
+\endinput
